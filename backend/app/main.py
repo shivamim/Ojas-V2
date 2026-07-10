@@ -20,6 +20,9 @@ from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.config import settings
 from app.routers import auth, superadmin, hospitals, patients, escalations, reports, whatsapp
 
+# FIX: Import models so Base.metadata is populated before create_all runs
+import app.models
+
 limiter = Limiter(key_func=get_remote_address)
 
 _IS_PROD = settings.ENVIRONMENT == "production"
@@ -82,7 +85,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS middleware — MUST be first
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -188,7 +191,7 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# FIX: Removed prefix="/api/v1" so routes match frontend
+# FIX: No prefix so routes match frontend
 app.include_router(auth.router)
 app.include_router(superadmin.router)
 app.include_router(hospitals.router)
