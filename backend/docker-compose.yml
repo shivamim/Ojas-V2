@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./ojas.db
+      - SECRET_KEY=change-me-in-production
+      - ENCRYPTION_KEY=a-32-byte-key-for-encryption!!
+      - FRONTEND_URL=http://localhost:5173
+    volumes:
+      - ./data:/app/data

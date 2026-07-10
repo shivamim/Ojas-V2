@@ -1,0 +1,258 @@
+OJAS HEALTHTECH BUSINESS SOURCE LICENSE
+Version 1.1
+
+Copyright (c) 2026 Shivam Shukla (Ojas HealthTech)
+All rights reserved.
+
+Contact: shivam.shukla1688@gmail.com
+
+═══════════════════════════════════════════════════════════════
+PARAMETERS
+═══════════════════════════════════════════════════════════════
+
+Licensor:             Shivam Shukla, trading as Ojas HealthTech
+Licensed Work:        Ojas HealthTech Platform
+                      (the software and all associated files in
+                      this repository, as first made available
+                      on May 1, 2026)
+Additional Use Grant: You may use the Licensed Work for personal,
+                      educational, and non-commercial evaluation
+                      purposes only.
+Change Date:          May 1, 2030
+Change License:       Apache License, Version 2.0
+
+═══════════════════════════════════════════════════════════════
+TERMS
+═══════════════════════════════════════════════════════════════
+
+1. GRANT OF RIGHTS
+
+   The Licensor hereby grants you the right to copy, modify,
+   create derivative works, and redistribute the Licensed Work,
+   subject to the limitations below.
+
+2. LIMITATION OF RIGHTS — PRODUCTION USE
+
+   The rights granted above are limited such that you may NOT
+   use the Licensed Work for a "Production Use" without a
+   separate written Commercial License Agreement from the
+   Licensor.
+
+   "Production Use" means:
+
+   a) Running the Licensed Work (or any derivative thereof) in
+      any environment that serves real patients, real clinical
+      users, or real hospital operations — whether for profit
+      or not-for-profit.
+
+   b) Offering the Licensed Work as a hosted service, SaaS
+      platform, white-label product, or managed service to
+      any third party.
+
+   c) Using the Licensed Work to process, store, or transmit
+      identifiable patient health data (PHI/PII) for any
+      external organization.
+
+   d) Embedding the Licensed Work into a commercial product
+      that is sold, licensed, or distributed.
+
+   e) Deploying the Licensed Work in any hospital, clinic,
+      diagnostic lab, or healthcare facility other than as
+      an internal proof-of-concept evaluation.
+
+   Non-Production Use (permitted without a commercial license):
+   - Running locally for personal learning or evaluation
+   - Academic research (with no live patient data)
+   - Contributing to this repository via pull requests
+   - Building a personal portfolio demo (no live patient data)
+
+3. CHANGE DATE
+
+   On the Change Date (May 1, 2030), the Licensed Work will
+   automatically become available under the Change License
+   (Apache 2.0). From that date forward, you may use, copy,
+   modify, and distribute the Licensed Work under the terms
+   of Apache 2.0.
+
+   This does NOT affect any Commercial License Agreements
+   entered into prior to the Change Date.
+
+4. HEALTHCARE DATA — STRICT RESTRICTIONS
+
+   Regardless of any other provision in this License:
+
+   a) You may NOT use the Licensed Work to process real,
+      identifiable patient health information (PHI) without:
+      - A valid Commercial License Agreement
+      - Compliance with India's Digital Personal Data
+        Protection Act, 2023 (DPDPA)
+      - NABH accreditation or equivalent certification
+        for clinical deployments
+      - Execution of a Data Processing Agreement (DPA)
+        with the Licensor where required
+
+   b) You may NOT disable, circumvent, bypass, or remove
+      any encryption, access control, audit logging, or
+      security mechanism in the Licensed Work.
+
+   c) You may NOT extract, export, reverse-engineer, or
+      reuse the encryption key derivation logic or salts
+      outside the Licensed Work.
+
+5. INTELLECTUAL PROPERTY
+
+   The Licensor retains all intellectual property rights
+   in and to the Licensed Work, including all patents,
+   trademarks, trade secrets, copyrights, and know-how.
+
+   No rights are granted by implication, estoppel, or
+   otherwise beyond those expressly stated in this License.
+
+   "Ojas HealthTech" is a trademark of Shivam Shukla.
+   You may NOT use this trademark in any product name,
+   domain name, or marketing material without prior
+   written consent.
+
+6. ATTRIBUTION
+
+   Any permitted use of the Licensed Work must:
+
+   a) Retain all copyright notices, this License, and the
+      NOTICE file (if any) in all copies or derivative works.
+
+   b) Include the following attribution in any public-facing
+      documentation or user interface:
+
+      "Powered by Ojas HealthTech technology"
+      (or as otherwise agreed in writing)
+
+7. CONTRIBUTIONS
+
+   By submitting a pull request, patch, or any other
+   contribution to this repository, you:
+
+   a) Grant the Licensor a perpetual, irrevocable, worldwide,
+      royalty-free license to use, reproduce, modify, and
+      distribute your contribution as part of the Licensed Work.
+
+   b) Represent that you have the legal right to make the
+      contribution and that it does not violate any third-party
+      rights.
+
+   c) Acknowledge that your contribution does NOT grant you
+      any ownership, equity, or revenue share in the Licensed
+      Work or the Licensor's business.
+
+8. DISCLAIMER OF WARRANTY
+
+   THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY
+   OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+   TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+   PURPOSE, AND NON-INFRINGEMENT.
+
+   THE LICENSOR DOES NOT WARRANT THAT THE LICENSED WORK WILL
+   BE ERROR-FREE, SECURE, OR FIT FOR USE IN SAFETY-CRITICAL
+   OR CLINICAL HEALTHCARE ENVIRONMENTS WITHOUT INDEPENDENT
+   VALIDATION.
+
+9. LIMITATION OF LIABILITY
+
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:
+
+   IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY INDIRECT,
+   INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY
+   DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS,
+   DATA, GOODWILL, PATIENT HARM, OR CLINICAL ADVERSE EVENTS,
+   ARISING OUT OF OR RELATED TO THIS LICENSE OR THE USE OF
+   THE LICENSED WORK.
+
+   THE LICENSOR'S TOTAL AGGREGATE LIABILITY SHALL NOT EXCEED
+   THE GREATER OF (A) THE AMOUNT PAID BY YOU TO THE LICENSOR
+   IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM, OR (B)
+   ONE HUNDRED INDIAN RUPEES (₹100).
+
+10. INDEMNIFICATION
+
+    You shall indemnify, defend, and hold harmless the Licensor
+    from and against any claims, damages, losses, and expenses
+    (including reasonable legal fees) arising out of or related
+    to:
+
+    a) Your use of the Licensed Work in violation of this License.
+    b) Your use of the Licensed Work in any clinical or patient-
+       facing environment.
+    c) Any data breach, data loss, or privacy violation arising
+       from your deployment of the Licensed Work.
+    d) Your violation of any applicable law or regulation.
+
+11. TERMINATION
+
+    This License and all rights granted hereunder terminate
+    automatically and immediately if you:
+
+    a) Breach any term of this License.
+    b) Initiate any patent litigation against the Licensor
+       alleging that the Licensed Work infringes a patent.
+    c) Become insolvent or subject to bankruptcy proceedings.
+
+    Upon termination, you must immediately cease all use of
+    the Licensed Work and destroy all copies in your possession.
+
+    Sections 5, 7, 8, 9, 10, and 12 survive termination.
+
+12. GOVERNING LAW & DISPUTE RESOLUTION
+
+    This License is governed by the laws of India.
+
+    Any dispute shall first be attempted to be resolved through
+    good-faith negotiation for 30 days.
+
+    If unresolved, disputes shall be subject to binding
+    arbitration under the Arbitration and Conciliation Act,
+    1996, with proceedings conducted in English in Gurugram,
+    Haryana, India.
+
+    Nothing prevents the Licensor from seeking injunctive or
+    other equitable relief in any court of competent jurisdiction
+    to protect intellectual property or confidential information.
+
+13. COMMERCIAL LICENSING
+
+    To obtain a Commercial License for Production Use, contact:
+
+    Shivam Shukla
+    Email:   shivam.shukla1688@gmail.com
+    Website: https://ojas.care/enterprise
+
+    Commercial licenses are available for:
+    - Single hospital deployments
+    - Multi-hospital SaaS deployments
+    - White-label and OEM licensing
+    - Government / public health sector deployments
+
+14. MISCELLANEOUS
+
+    a) SEVERABILITY: If any provision is held unenforceable,
+       the remaining provisions continue in full force.
+
+    b) WAIVER: Failure to enforce any provision is not a waiver
+       of the right to enforce it later.
+
+    c) ENTIRE AGREEMENT: This License constitutes the entire
+       agreement between the parties regarding the Licensed Work
+       and supersedes all prior agreements on the same subject.
+
+    d) AMENDMENTS: The Licensor may publish revised versions of
+       this License. A new version will not apply to you without
+       your express written consent.
+
+    e) NO PARTNERSHIP: Nothing in this License creates a
+       partnership, joint venture, agency, or employment
+       relationship between you and the Licensor.
+
+═══════════════════════════════════════════════════════════════
+For questions about this License:
+shivam.shukla1688@gmail.com
+═══════════════════════════════════════════════════════════════
+
+© 2026 Shivam Shukla (Ojas HealthTech). All rights reserved.
