@@ -82,7 +82,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS middleware
+# CORS middleware — MUST be first
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -140,15 +140,14 @@ async def add_request_metadata(request: Request, call_next):
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
-    # OWASP recommended security headers
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
     
-    # Content Security Policy
     if _IS_PROD:
         csp = (
             "default-src 'self'; "
@@ -189,14 +188,14 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Register all routers
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(superadmin.router, prefix="/api/v1")
-app.include_router(hospitals.router, prefix="/api/v1")
-app.include_router(patients.router, prefix="/api/v1")
-app.include_router(escalations.router, prefix="/api/v1")
-app.include_router(reports.router, prefix="/api/v1")
-app.include_router(whatsapp.router, prefix="/api/v1")
+# FIX: Removed prefix="/api/v1" so routes match frontend
+app.include_router(auth.router)
+app.include_router(superadmin.router)
+app.include_router(hospitals.router)
+app.include_router(patients.router)
+app.include_router(escalations.router)
+app.include_router(reports.router)
+app.include_router(whatsapp.router)
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
