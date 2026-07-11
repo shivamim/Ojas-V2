@@ -484,7 +484,7 @@ async def approve_erasure(
     patient_id: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(require_permission(Permission.HOSPITAL_ADMIN))
+    current_user: CurrentUser = Depends(require_permission(Permission.HOSPITAL_MANAGE))
 ):
     """
     DPDPA 2023 Right to Erasure: Approve and execute erasure.
