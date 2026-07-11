@@ -36,9 +36,12 @@ async def _seed_if_needed():
     """Run seed data in background after app startup - ONLY in non-production."""
     try:
         await asyncio.sleep(2)
-        async with AsyncSessionLocal() as seed_db:
-            from seed_data import seed
-            await seed(seed_db)
+        # First create tables if they don't exist
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
+        from seed_data import seed
+        await seed()
     except Exception as e:
         logging.warning(f"Seed data error (background): {e}")
 

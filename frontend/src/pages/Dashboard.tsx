@@ -3,6 +3,7 @@ import { usePatients, useEscalations } from '@/api/hooks'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import RiskBadge from '@/components/RiskBadge'
+import StatusBadge from '@/components/StatusBadge'
 import {
   Users,
   AlertTriangle,
@@ -11,8 +12,14 @@ import {
   ArrowRight,
   UserPlus,
   FileText,
+  Phone,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  TrendingDown,
+  Award,
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 
 const Dashboard = () => {
   const { user } = useAuth()
@@ -28,11 +35,36 @@ const Dashboard = () => {
     ? Math.round(patients.reduce((acc: number, p: { response_rate?: number }) => acc + (p.response_rate || 0), 0) / patients.length)
     : 0
 
+  const activePatients = patients.filter((p: { status?: string }) => p.status === 'ACTIVE').length
+  const completedPatients = patients.filter((p: { status?: string }) => p.status === 'COMPLETED').length
+  const escalatedPatients = patients.filter((p: { status?: string }) => p.status === 'ESCALATED').length
+  const noReplyPatients = patients.filter((p: { status?: string }) => p.status === 'NO_REPLY').length
+
   const riskDistribution = [
     { name: 'Low', count: patients.filter((p: { risk_level?: string }) => p.risk_level === 'LOW').length, color: 'hsl(142 71% 45%)' },
     { name: 'Medium', count: patients.filter((p: { risk_level?: string }) => p.risk_level === 'MEDIUM').length, color: 'hsl(38 92% 50%)' },
     { name: 'High', count: patients.filter((p: { risk_level?: string }) => p.risk_level === 'HIGH').length, color: 'hsl(24 95% 53%)' },
     { name: 'Critical', count: patients.filter((p: { risk_level?: string }) => p.risk_level === 'CRITICAL').length, color: 'hsl(0 84% 60%)' },
+  ]
+
+  const statusDistribution = [
+    { name: 'Active', value: activePatients, color: 'hsl(221 83% 53%)' },
+    { name: 'Completed', value: completedPatients, color: 'hsl(142 71% 45%)' },
+    { name: 'Escalated', value: escalatedPatients, color: 'hsl(0 84% 60%)' },
+    { name: 'No Reply', value: noReplyPatients, color: 'hsl(38 92% 50%)' },
+  ]
+
+  const todayCheckins = patients.filter((p: { current_day?: number }) => p.current_day && p.current_day <= 14).length
+  const pendingCheckins = patients.filter((p: { status?: string }) => ['ACTIVE', 'ESCALATED'].includes(p.status)).length
+  const highRiskPatients = patients.filter((p: { risk_level?: string }) => ['HIGH', 'CRITICAL'].includes(p.risk_level))
+  
+  const recoveryTrend = [
+    { day: 'Day 1', completed: 7, pending: 0, missed: 0 },
+    { day: 'Day 3', completed: 7, pending: 0, missed: 0 },
+    { day: 'Day 5', completed: 6, pending: 0, missed: 1 },
+    { day: 'Day 7', completed: 5, pending: 0, missed: 2 },
+    { day: 'Day 10', completed: 4, pending: 1, missed: 2 },
+    { day: 'Day 14', completed: 3, pending: 2, missed: 2 },
   ]
 
   const recentPatients = [...patients]
@@ -42,10 +74,10 @@ const Dashboard = () => {
     .slice(0, 5)
 
   const stats = [
-    { label: 'Total Patients', value: totalPatients, icon: Users, color: 'bg-[hsl(var(--ojas-100))] text-[hsl(var(--ojas-700))]' },
-    { label: 'Open Escalations', value: activeEscalations, icon: AlertTriangle, color: 'bg-[hsl(var(--error-50))] text-[hsl(var(--error-700))]' },
-    { label: 'Avg Response Rate', value: `${avgResponse}%`, icon: Activity, color: 'bg-[hsl(var(--success-50))] text-[hsl(var(--success-700))]' },
-    { label: 'Active Monitoring', value: patients.filter((p: { status?: string }) => p.status === 'ACTIVE').length, icon: TrendingUp, color: 'bg-purple-50 text-purple-700' },
+    { label: 'Total Patients', value: totalPatients, icon: Users, color: 'bg-[hsl(var(--ojas-100))] text-[hsl(var(--ojas-700))]', trend: '+2 this week' },
+    { label: 'Open Escalations', value: activeEscalations, icon: AlertTriangle, color: 'bg-[hsl(var(--error-50))] text-[hsl(var(--error-700))]', trend: activeEscalations > 0 ? 'Needs attention' : 'All clear' },
+    { label: 'Avg Response Rate', value: `${avgResponse}%`, icon: Activity, color: 'bg-[hsl(var(--success-50))] text-[hsl(var(--success-700))]', trend: avgResponse >= 80 ? 'Excellent' : 'Needs improvement' },
+    { label: 'Active Monitoring', value: activePatients, icon: TrendingUp, color: 'bg-purple-50 text-purple-700', trend: `${pendingCheckins} check-ins today` },
   ]
 
   return (
@@ -55,6 +87,10 @@ const Dashboard = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-0.5">Welcome back, {user?.full_name || user?.email}</p>
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+            <Calendar size={12} />
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button asChild className="bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))]">
@@ -79,12 +115,61 @@ const Dashboard = () => {
             <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${stat.color}`}>
               <stat.icon size={22} />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-2xl font-bold">{stat.value}</p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <p className="text-xs text-[hsl(var(--ojas-600))] mt-0.5">{stat.trend}</p>
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="card-default border-l-4 border-l-[hsl(var(--ojas-500))]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[hsl(var(--ojas-100))] flex items-center justify-center">
+              <Phone size={20} className="text-[hsl(var(--ojas-700))]" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Call High-Risk Patients</p>
+              <p className="text-xs text-muted-foreground">{highRiskPatients.length} patients need attention</p>
+            </div>
+            <Button variant="outline" size="sm" className="ml-auto" asChild>
+              <Link to="/patients">View</Link>
+            </Button>
+          </div>
+        </div>
+        
+        <div className="card-default border-l-4 border-l-[hsl(var(--success-500))]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[hsl(var(--success-100))] flex items-center justify-center">
+              <CheckCircle2 size={20} className="text-[hsl(var(--success-700))]" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Today's Check-ins</p>
+              <p className="text-xs text-muted-foreground">{todayCheckins} scheduled</p>
+            </div>
+            <Button variant="outline" size="sm" className="ml-auto" asChild>
+              <Link to="/checkins">Manage</Link>
+            </Button>
+          </div>
+        </div>
+        
+        <div className="card-default border-l-4 border-l-[hsl(var(--warning-500))]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[hsl(var(--warning-100))] flex items-center justify-center">
+              <Clock size={20} className="text-[hsl(var(--warning-700))]" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Pending Follow-ups</p>
+              <p className="text-xs text-muted-foreground">{pendingCheckins} pending</p>
+            </div>
+            <Button variant="outline" size="sm" className="ml-auto" asChild>
+              <Link to="/escalations">Review</Link>
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -96,12 +181,12 @@ const Dashboard = () => {
               View All <ArrowRight size={12} />
             </Link>
           </div>
-          <div className="h-64">
+          <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={riskDistribution}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: 'hsl(var(--muted))' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
@@ -116,8 +201,48 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Status Pie Chart */}
+        <div className="card-default lg:col-span-1">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Patient Status</h3>
+            <Link to="/patients" className="text-xs text-[hsl(var(--ojas-600))] hover:underline flex items-center gap-1">
+              View All <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={statusDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={70}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {statusDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            {statusDistribution.map((status) => (
+              <div key={status.name} className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }} />
+                <span className="text-muted-foreground">{status.name}: {status.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Recent Patients */}
-        <div className="card-default lg:col-span-2">
+        <div className="card-default lg:col-span-1">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Recent Patients</h3>
             <Link to="/patients" className="text-xs text-[hsl(var(--ojas-600))] hover:underline flex items-center gap-1">
@@ -140,37 +265,68 @@ const Dashboard = () => {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Name</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden sm:table-cell">Surgery</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Day</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Risk</th>
-                    <th className="text-right py-3 px-2 font-medium text-muted-foreground">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentPatients.map((p: { id: string; full_name: string; surgery_type: string; current_day: number; risk_level: string; risk_score: number }) => (
-                    <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-2 font-medium">{p.full_name}</td>
-                      <td className="py-3 px-2 text-muted-foreground hidden sm:table-cell">{p.surgery_type}</td>
-                      <td className="py-3 px-2 text-muted-foreground">Day {p.current_day}/14</td>
-                      <td className="py-3 px-2">
-                        <RiskBadge level={p.risk_level} score={p.risk_score} size="sm" />
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <Link to={`/patients/${p.id}`} className="text-[hsl(var(--ojas-600))] hover:text-[hsl(var(--ojas-700))] font-medium text-xs">
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-3">
+              {recentPatients.map((p: { id: string; full_name: string; surgery_type: string; current_day: number; risk_level: string; risk_score: number; status?: string }) => (
+                <div key={p.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--ojas-100))] flex items-center justify-center text-xs font-semibold text-[hsl(var(--ojas-700))]">
+                      {p.full_name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{p.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{p.surgery_type}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={p.status || 'ACTIVE'} size="sm" />
+                    <Link to={`/patients/${p.id}`} className="text-[hsl(var(--ojas-600))] hover:text-[hsl(var(--ojas-700))] font-medium text-xs">
+                      View
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Recovery Trend Chart */}
+      <div className="card-default">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={18} className="text-[hsl(var(--ojas-600))]" />
+            <h3 className="font-semibold">Recovery Progress Trend</h3>
+          </div>
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--success-500))]" />
+              <span className="text-muted-foreground">Completed</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--ojas-500))]" />
+              <span className="text-muted-foreground">Pending</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--error-500))]" />
+              <span className="text-muted-foreground">Missed</span>
+            </div>
+          </div>
+        </div>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={recoveryTrend}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ fill: 'hsl(var(--muted))' }}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              />
+              <Bar dataKey="completed" stackId="a" fill="hsl(var(--success-500))" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="pending" stackId="a" fill="hsl(var(--ojas-500))" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="missed" stackId="a" fill="hsl(var(--error-500))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -202,6 +358,62 @@ const Dashboard = () => {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* High Risk Patients Table */}
+      {highRiskPatients.length > 0 && (
+        <div className="card-default">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Award size={18} className="text-[hsl(var(--error-500))]" />
+              <h3 className="font-semibold">High-Risk Patients Requiring Attention</h3>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/patients">View All Patients</Link>
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Patient</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden sm:table-cell">Surgery</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Day</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Risk Score</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
+                  <th className="text-right py-3 px-2 font-medium text-muted-foreground">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {highRiskPatients.map((p: { id: string; full_name: string; surgery_type: string; current_day: number; risk_level: string; risk_score: number; status?: string }) => (
+                  <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-[hsl(var(--error-50))] flex items-center justify-center text-xs font-semibold text-[hsl(var(--error-700))]">
+                          {p.full_name.charAt(0)}
+                        </div>
+                        <span className="font-medium">{p.full_name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-2 text-muted-foreground hidden sm:table-cell">{p.surgery_type}</td>
+                    <td className="py-3 px-2 text-muted-foreground">Day {p.current_day}/14</td>
+                    <td className="py-3 px-2">
+                      <RiskBadge level={p.risk_level} score={p.risk_score} size="sm" />
+                    </td>
+                    <td className="py-3 px-2">
+                      <StatusBadge status={p.status || 'ACTIVE'} size="sm" />
+                    </td>
+                    <td className="py-3 px-2 text-right">
+                      <Link to={`/patients/${p.id}`} className="text-[hsl(var(--ojas-600))] hover:text-[hsl(var(--ojas-700))] font-medium text-xs">
+                        Review
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
