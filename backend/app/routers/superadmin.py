@@ -140,10 +140,21 @@ async def invite_user(
     db.add(invite)
     await db.commit()
 
+    # Build invite link using FRONTEND_URL from settings
+    invite_link = f"{settings.FRONTEND_URL}/accept-invite?token={token}"
+    
+    # Send email notification
+    from app.services.email import send_invite_email
+    hospital_result = await db.execute(select(Hospital).where(Hospital.id == uuid.UUID(hospital_id)))
+    hospital = hospital_result.scalar_one_or_none()
+    hospital_name = hospital.name if hospital else "Ojas Hospital"
+    
+    await send_invite_email(req.email, invite_link, hospital_name)
+
     return {
         "message": "Invite created",
         "token": token,
-        "link": f"https://ojas.care/accept-invite?token={token}"
+        "link": invite_link
     }
 
 
@@ -170,37 +181,6 @@ async def get_audit_logs(
     } for l in logs]
 
 
-@router.post("/reset-database")
-async def reset_database(
-    request: Request, 
-    db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(require_superadmin)
-):
-    reset_key = os.getenv("RESET_KEY")
-    if not reset_key:
-        raise HTTPException(500, "RESET_KEY not configured")
-    
-    if request.headers.get("X-Reset-Key") != reset_key:
-        raise HTTPException(403, "Invalid reset key")
-    
-    tables = [
-        "refresh_tokens", "audit_logs", "timeline_events", 
-        "escalations", "checkins", "patients", 
-        "users", "hospital_invites", "hospitals"
-    ]
-    
-    for table in tables:
-        try:
-            await db.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE"))
-        except Exception:
-            pass
-    
-    await db.commit()
-    
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    from seed_data import seed
-    await seed(db)
-    
-    return {"message": "Database reset and seeded successfully"}
+# REMOVED: /reset-database endpoint for production safety
+# This endpoint was dangerous as it could drop all tables via HTTP request.
+# For local development, use the standalone script: python scripts/reset_local_db.py

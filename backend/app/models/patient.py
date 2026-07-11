@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Float, Text
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Float, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -29,6 +29,13 @@ class Patient(Base):
     risk_level = Column(String, default="LOW")
     readmission_risk = Column(String, default="LOW")
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # DPDPA 2023 Compliance Fields
+    consent_given = Column(Boolean, default=False)
+    consent_given_at = Column(DateTime, nullable=True)
+    consent_version = Column(String, nullable=True)
+    preferred_language = Column(String, default="en")
+    erasure_requested_at = Column(DateTime, nullable=True)
 
     hospital = relationship("Hospital", back_populates="patients")
     checkins = relationship("CheckIn", back_populates="patient", cascade="all, delete")
