@@ -16,8 +16,6 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  TrendingDown,
-  Award,
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 
@@ -55,8 +53,8 @@ const Dashboard = () => {
   ]
 
   const todayCheckins = patients.filter((p: { current_day?: number }) => p.current_day && p.current_day <= 14).length
-  const pendingCheckins = patients.filter((p: { status?: string }) => ['ACTIVE', 'ESCALATED'].includes(p.status)).length
-  const highRiskPatients = patients.filter((p: { risk_level?: string }) => ['HIGH', 'CRITICAL'].includes(p.risk_level))
+  const pendingCheckins = patients.filter((p: { status?: string }) => p.status ? ['ACTIVE', 'ESCALATED'].includes(p.status) : false).length
+  const highRiskPatients = patients.filter((p: { risk_level?: string }) => p.risk_level ? ['HIGH', 'CRITICAL'].includes(p.risk_level) : false)
   
   const recoveryTrend = [
     { day: 'Day 1', completed: 7, pending: 0, missed: 0 },
@@ -252,173 +250,4 @@ const Dashboard = () => {
 
           {patientsLoading ? (
             <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-14 skeleton" />
-              ))}
-            </div>
-          ) : recentPatients.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p>No patients enrolled yet</p>
-              <Button asChild variant="outline" className="mt-4" size="sm">
-                <Link to="/patients/new">Enroll your first patient</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {recentPatients.map((p: { id: string; full_name: string; surgery_type: string; current_day: number; risk_level: string; risk_score: number; status?: string }) => (
-                <div key={p.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--ojas-100))] flex items-center justify-center text-xs font-semibold text-[hsl(var(--ojas-700))]">
-                      {p.full_name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{p.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{p.surgery_type}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={p.status || 'ACTIVE'} size="sm" />
-                    <Link to={`/patients/${p.id}`} className="text-[hsl(var(--ojas-600))] hover:text-[hsl(var(--ojas-700))] font-medium text-xs">
-                      View
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Recovery Trend Chart */}
-      <div className="card-default">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={18} className="text-[hsl(var(--ojas-600))]" />
-            <h3 className="font-semibold">Recovery Progress Trend</h3>
-          </div>
-          <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--success-500))]" />
-              <span className="text-muted-foreground">Completed</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--ojas-500))]" />
-              <span className="text-muted-foreground">Pending</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--error-500))]" />
-              <span className="text-muted-foreground">Missed</span>
-            </div>
-          </div>
-        </div>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={recoveryTrend}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                cursor={{ fill: 'hsl(var(--muted))' }}
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-              />
-              <Bar dataKey="completed" stackId="a" fill="hsl(var(--success-500))" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="pending" stackId="a" fill="hsl(var(--ojas-500))" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="missed" stackId="a" fill="hsl(var(--error-500))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Escalations Preview */}
-      {activeEscalations > 0 && (
-        <div className="card-default border-l-4 border-l-[hsl(var(--error-500))]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle size={18} className="text-[hsl(var(--error-500))]" />
-              <h3 className="font-semibold">Active Escalations</h3>
-              <span className="bg-[hsl(var(--error-50))] text-[hsl(var(--error-700))] text-xs font-bold px-2 py-0.5 rounded-full">
-                {activeEscalations}
-              </span>
-            </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/escalations">View All</Link>
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {escalations.slice(0, 3).map((e: { id: string; patient_name: string; level: string; trigger_type: string; created_at: string }) => (
-              <div key={e.id} className="flex items-center justify-between p-3 bg-[hsl(var(--error-50))] rounded-lg">
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-sm">{e.patient_name}</span>
-                  <RiskBadge level={e.level} size="sm" />
-                  <span className="text-xs text-muted-foreground hidden sm:inline">{e.trigger_type}</span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(e.created_at).toLocaleDateString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* High Risk Patients Table */}
-      {highRiskPatients.length > 0 && (
-        <div className="card-default">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Award size={18} className="text-[hsl(var(--error-500))]" />
-              <h3 className="font-semibold">High-Risk Patients Requiring Attention</h3>
-            </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/patients">View All Patients</Link>
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Patient</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden sm:table-cell">Surgery</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Day</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Risk Score</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
-                  <th className="text-right py-3 px-2 font-medium text-muted-foreground">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {highRiskPatients.map((p: { id: string; full_name: string; surgery_type: string; current_day: number; risk_level: string; risk_score: number; status?: string }) => (
-                  <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-[hsl(var(--error-50))] flex items-center justify-center text-xs font-semibold text-[hsl(var(--error-700))]">
-                          {p.full_name.charAt(0)}
-                        </div>
-                        <span className="font-medium">{p.full_name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2 text-muted-foreground hidden sm:table-cell">{p.surgery_type}</td>
-                    <td className="py-3 px-2 text-muted-foreground">Day {p.current_day}/14</td>
-                    <td className="py-3 px-2">
-                      <RiskBadge level={p.risk_level} score={p.risk_score} size="sm" />
-                    </td>
-                    <td className="py-3 px-2">
-                      <StatusBadge status={p.status || 'ACTIVE'} size="sm" />
-                    </td>
-                    <td className="py-3 px-2 text-right">
-                      <Link to={`/patients/${p.id}`} className="text-[hsl(var(--ojas-600))] hover:text-[hsl(var(--ojas-700))] font-medium text-xs">
-                        Review
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default Dashboard
+              {
