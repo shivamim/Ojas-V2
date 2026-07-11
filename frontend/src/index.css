@@ -4,188 +4,73 @@
 
 @layer base {
   :root {
-    /* Modern Teal/Emerald Healthcare Theme */
-    --background: 180 50% 98%;
-    --foreground: 170 40% 15%;
-    
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 170 40% 15%;
-    
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 170 40% 15%;
-    
-    /* Primary - Beautiful Teal */
-    --primary: 174 72% 36%;
-    --primary-foreground: 0 0% 100%;
-    
-    /* Secondary - Soft Cyan */
-    --secondary: 180 60% 90%;
-    --secondary-foreground: 174 72% 25%;
-    
-    /* Muted */
-    --muted: 180 40% 94%;
-    --muted-foreground: 170 20% 45%;
-    
-    /* Accent - Warm Coral for CTAs */
-    --accent: 12 85% 58%;
-    --accent-foreground: 0 0% 100%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --border: 180 30% 85%;
-    --input: 180 30% 85%;
-    --ring: 174 72% 36%;
-    
-    /* Ojas Brand Colors - Teal Gradient Scale */
-    --ojas-50: 174 70% 97%;
-    --ojas-100: 174 70% 92%;
-    --ojas-200: 174 70% 82%;
-    --ojas-300: 174 70% 68%;
-    --ojas-400: 174 70% 52%;
-    --ojas-500: 174 72% 42%;
-    --ojas-600: 174 72% 36%;
-    --ojas-700: 174 72% 28%;
-    --ojas-800: 174 72% 22%;
-    --ojas-900: 174 72% 16%;
-    --ojas-950: 174 72% 10%;
-    
-    /* Success - Emerald Green */
-    --success-50: 150 60% 97%;
-    --success-100: 150 60% 92%;
-    --success-200: 150 60% 82%;
-    --success-300: 150 60% 68%;
-    --success-400: 150 60% 52%;
-    --success-500: 150 60% 42%;
-    --success-600: 150 60% 36%;
-    --success-700: 150 60% 28%;
-    --success-800: 150 60% 22%;
-    --success-900: 150 60% 16%;
-    
-    /* Warning - Amber */
-    --warning-50: 38 90% 97%;
-    --warning-100: 38 90% 92%;
-    --warning-200: 38 90% 82%;
-    --warning-300: 38 90% 68%;
-    --warning-400: 38 90% 58%;
-    --warning-500: 38 90% 52%;
-    --warning-600: 38 90% 46%;
-    --warning-700: 38 90% 38%;
-    --warning-800: 38 90% 28%;
-    --warning-900: 38 90% 18%;
-    
-    /* Error - Rose Red */
-    --error-50: 350 85% 97%;
-    --error-100: 350 85% 92%;
-    --error-200: 350 85% 82%;
-    --error-300: 350 85% 72%;
-    --error-400: 350 85% 65%;
-    --error-500: 350 85% 58%;
-    --error-600: 350 85% 52%;
-    --error-700: 350 85% 42%;
-    --error-800: 350 85% 32%;
-    --error-900: 350 85% 22%;
-    
-    /* Sidebar */
-    --sidebar-background: 174 72% 98%;
-    --sidebar-foreground: 174 72% 20%;
-    --sidebar-primary: 174 72% 36%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 180 60% 90%;
-    --sidebar-accent-foreground: 174 72% 25%;
-    --sidebar-border: 180 30% 85%;
-    --sidebar-ring: 174 72% 36%;
-    
-    --radius: 0.75rem;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+
+    /* Ojas Custom Colors */
+    --ojas-50: 174 60% 96%;
+    --ojas-100: 174 55% 88%;
+    --ojas-200: 174 50% 78%;
+    --ojas-300: 174 45% 65%;
+    --ojas-400: 174 55% 50%;
+    --ojas-500: 174 84% 35%;
+    --ojas-600: 174 84% 28%;
+    --ojas-700: 174 84% 22%;
+    --ojas-800: 174 84% 16%;
+    --ojas-900: 174 84% 10%;
+
+    --success-50: 142 76% 96%;
+    --success-100: 142 71% 88%;
+    --success-500: 142 71% 45%;
+    --success-700: 142 71% 30%;
+
+    --error-50: 0 84% 96%;
+    --error-500: 0 84% 60%;
+    --error-700: 0 84% 45%;
+
+    --warning-50: 38 92% 96%;
+    --warning-500: 38 92% 50%;
+    --warning-700: 38 92% 35%;
   }
 
   .dark {
-    --background: 170 40% 8%;
-    --foreground: 180 30% 95%;
-    
-    --card: 170 40% 10%;
-    --card-foreground: 180 30% 95%;
-    
-    --popover: 170 40% 10%;
-    --popover-foreground: 180 30% 95%;
-    
-    --primary: 174 72% 42%;
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 180 30% 20%;
-    --secondary-foreground: 180 30% 90%;
-    
-    --muted: 170 30% 18%;
-    --muted-foreground: 170 20% 65%;
-    
-    --accent: 12 85% 58%;
-    --accent-foreground: 0 0% 100%;
-    
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --border: 170 30% 22%;
-    --input: 170 30% 22%;
-    --ring: 174 72% 42%;
-    
-    /* Ojas Dark Mode */
-    --ojas-50: 174 50% 12%;
-    --ojas-100: 174 55% 16%;
-    --ojas-200: 174 60% 22%;
-    --ojas-300: 174 65% 30%;
-    --ojas-400: 174 68% 38%;
-    --ojas-500: 174 70% 45%;
-    --ojas-600: 174 72% 52%;
-    --ojas-700: 174 72% 60%;
-    --ojas-800: 174 70% 70%;
-    --ojas-900: 174 65% 82%;
-    --ojas-950: 174 60% 92%;
-    
-    /* Success Dark */
-    --success-50: 150 50% 12%;
-    --success-100: 150 55% 16%;
-    --success-200: 150 60% 22%;
-    --success-300: 150 60% 30%;
-    --success-400: 150 60% 40%;
-    --success-500: 150 60% 48%;
-    --success-600: 150 60% 56%;
-    --success-700: 150 60% 66%;
-    --success-800: 150 55% 78%;
-    --success-900: 150 50% 88%;
-    
-    /* Warning Dark */
-    --warning-50: 38 70% 14%;
-    --warning-100: 38 75% 18%;
-    --warning-200: 38 80% 24%;
-    --warning-300: 38 85% 32%;
-    --warning-400: 38 88% 42%;
-    --warning-500: 38 90% 52%;
-    --warning-600: 38 90% 60%;
-    --warning-700: 38 88% 70%;
-    --warning-800: 38 85% 80%;
-    --warning-900: 38 80% 90%;
-    
-    /* Error Dark */
-    --error-50: 350 70% 14%;
-    --error-100: 350 75% 18%;
-    --error-200: 350 78% 24%;
-    --error-300: 350 80% 32%;
-    --error-400: 350 82% 42%;
-    --error-500: 350 85% 52%;
-    --error-600: 350 85% 60%;
-    --error-700: 350 82% 70%;
-    --error-800: 350 80% 80%;
-    --error-900: 350 75% 90%;
-    
-    /* Sidebar Dark */
-    --sidebar-background: 170 40% 10%;
-    --sidebar-foreground: 180 30% 90%;
-    --sidebar-primary: 174 72% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 180 30% 20%;
-    --sidebar-accent-foreground: 180 30% 90%;
-    --sidebar-border: 170 30% 22%;
-    --sidebar-ring: 174 72% 42%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
   }
 
   * {
@@ -196,139 +81,145 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* ============================================
+     GLOBAL INPUT FOCUS FIX — NO BLACK BORDERS
+     ============================================ */
+  input,
+  textarea,
+  select,
+  button {
+    outline: none !important;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply border-[hsl(var(--ojas-500))];
+    box-shadow: 0 0 0 3px hsl(var(--ojas-500) / 0.15) !important;
+    transition: all 0.2s ease-out;
+  }
+
+  textarea {
+    @apply border border-slate-200 rounded-xl bg-slate-50 text-slate-800 placeholder-slate-400;
+    transition: all 0.2s ease-out;
+    resize: vertical;
+  }
+
+  textarea:focus {
+    @apply bg-white border-[hsl(var(--ojas-500))];
+    box-shadow: 0 0 0 3px hsl(var(--ojas-500) / 0.15) !important;
+  }
+
+  input[type="password"]:focus,
+  input[type="text"]:focus,
+  input[type="email"]:focus {
+    @apply bg-white;
+  }
+
+  /* Remove ugly browser autofill yellow background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
 }
 
-/* Custom scrollbar */
-@layer utilities {
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: hsl(var(--muted));
-    border-radius: 10px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.5);
-    border-radius: 10px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.7);
-  }
-}
-
-/* Glass morphism effect */
 @layer components {
-  .glass {
-    @apply backdrop-blur-md bg-white/70 dark:bg-black/40;
+  .card-default {
+    @apply bg-white rounded-2xl p-5 border border-slate-100 shadow-sm;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
-  
-  .glass-card {
-    @apply backdrop-blur-md bg-white/80 dark:bg-gray-900/60 border border-white/20 shadow-lg;
+
+  .card-default:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
   }
-  
-  /* Card hover effects */
-  .card-hover {
-    @apply transition-all duration-300 ease-out hover:shadow-xl hover:-translate-y-1 hover:border-primary/30;
+
+  .skeleton {
+    @apply bg-slate-200 rounded-lg animate-pulse;
   }
-  
-  /* Gradient text */
-  .gradient-text {
-    @apply bg-gradient-to-r from-[hsl(var(--ojas-600))] via-[hsl(var(--ojas-500))] to-[hsl(var(--primary))] bg-clip-text text-transparent;
-  }
-  
-  /* Gradient background */
-  .gradient-bg {
-    @apply bg-gradient-to-br from-[hsl(var(--ojas-50))] via-[hsl(var(--ojas-100))] to-[hsl(var(--secondary))];
-  }
-  
-  /* Button pulse animation */
-  .btn-pulse {
-    @apply relative overflow-hidden;
-  }
-  
-  .btn-pulse::after {
-    content: '';
-    @apply absolute inset-0 rounded-md opacity-0 transition-opacity duration-300;
-    background: radial-gradient(circle at center, white 0%, transparent 70%);
-  }
-  
-  .btn-pulse:active::after {
-    @apply opacity-30;
-  }
-  
-  /* Shimmer loading effect */
+
   .shimmer {
-    @apply relative overflow-hidden;
+    @apply relative overflow-hidden bg-slate-200 rounded-xl;
   }
-  
-  .shimmer::before {
+
+  .shimmer::after {
     content: '';
     @apply absolute inset-0 -translate-x-full;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      hsl(var(--primary) / 0.1),
-      transparent
-    );
-    animation: shimmer 2s infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite linear;
   }
-  
+
+  .btn-primary {
+    @apply bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))] text-white font-medium px-5 py-2.5 rounded-xl transition-all duration-200;
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border-2 border-white text-white font-medium px-5 py-2.5 rounded-xl transition-all duration-300;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-white text-[hsl(var(--ojas-700))];
+  }
+
+  .page-container {
+    @apply p-6 max-w-7xl mx-auto;
+  }
+
+  .form-input {
+    @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 transition-all duration-200 ease-out;
+  }
+
+  .form-input:focus {
+    @apply border-[hsl(var(--ojas-500))] bg-white;
+    box-shadow: 0 0 0 3px hsl(var(--ojas-500) / 0.15);
+  }
+
+  .form-input.error {
+    @apply border-red-400 bg-red-50;
+    animation: shake 0.4s ease-in-out;
+  }
+
+  .form-input.error:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-slate-700 mb-1.5;
+  }
+
+  .form-error {
+    @apply text-xs text-red-500 mt-1 flex items-center gap-1;
+  }
+}
+
+@layer utilities {
   @keyframes shimmer {
     100% {
       transform: translateX(100%);
     }
   }
-  
-  /* Section container with max-width */
-  .section-container {
-    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
   }
-  
-  /* Skeleton loader */
-  .skeleton {
-    @apply animate-pulse bg-gradient-to-r from-muted via-muted-foreground/10 to-muted bg-[length:200%_100%];
-    animation: skeleton-loading 1.5s ease-in-out infinite;
+
+  .animate-shake {
+    animation: shake 0.4s ease-in-out;
   }
-  
-  @keyframes skeleton-loading {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--ojas-600))] to-[hsl(var(--ojas-400))];
   }
-  
-  /* Fade in animations */
-  .fade-in {
-    @apply animate-in duration-500;
-  }
-  
-  .fade-in-up {
-    @apply animate-in slide-in-from-bottom-8 duration-500;
-  }
-  
-  .fade-in-down {
-    @apply animate-in slide-in-from-top-8 duration-500;
-  }
-  
-  /* Stagger animations for lists */
-  .stagger-animation > * {
-    @apply opacity-0 animate-in fade-in slide-in-from-bottom-4;
-  }
-  
-  .stagger-animation > *:nth-child(1) { animation-delay: 100ms; }
-  .stagger-animation > *:nth-child(2) { animation-delay: 200ms; }
-  .stagger-animation > *:nth-child(3) { animation-delay: 300ms; }
-  .stagger-animation > *:nth-child(4) { animation-delay: 400ms; }
-  .stagger-animation > *:nth-child(5) { animation-delay: 500ms; }
-  .stagger-animation > *:nth-child(6) { animation-delay: 600ms; }
-  .stagger-animation > *:nth-child(7) { animation-delay: 700ms; }
-  .stagger-animation > *:nth-child(8) { animation-delay: 800ms; }
-  .stagger-animation > *:nth-child(9) { animation-delay: 900ms; }
-  .stagger-animation > *:nth-child(10) { animation-delay: 1000ms; }
 }
