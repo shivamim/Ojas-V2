@@ -34,7 +34,7 @@ async def _ensure_admin_exists(db):
     from app.core.security import get_password_hash
     
     result = await db.execute(select(User))
-    if result.scalar_one_or_none():
+    if result.scalars().first():  # ← FIX: was scalar_one_or_none() — crashes with multiple users
         return  # Users already exist, do nothing
     
     admin = User(
@@ -97,7 +97,7 @@ async def lifespan(app: FastAPI):
         logging.error("Database tables missing after creation attempt!")
         raise RuntimeError("DB initialization failed — manual intervention required")
 
-    # NEW: Auto-create admin if no users exist (works in both dev and prod)
+    # Auto-create admin if no users exist (works in both dev and prod)
     async with AsyncSessionLocal() as db:
         await _ensure_admin_exists(db)
 
@@ -185,7 +185,7 @@ async def seed_demo_data():
             from seed_data import seed
             await seed(db)
             return {
-                "message": " Demo data seeded successfully!",
+                "message": "✅ Demo data seeded successfully!",
                 "data": {
                     "users": ["admin@ojas.care", "nurse@cityhospital.com", "dr.shikhar@cityhospital.com"],
                     "hospital": "City Hospital",
