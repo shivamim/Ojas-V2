@@ -250,4 +250,85 @@ const Dashboard = () => {
 
           {patientsLoading ? (
             <div className="space-y-3">
-              {
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-14 skeleton" />
+              ))}
+            </div>
+          ) : recentPatients.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p>No patients enrolled yet</p>
+              <Button asChild variant="outline" className="mt-4" size="sm">
+                <Link to="/patients/new">Enroll your first patient</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentPatients.map((p: { id: string; full_name: string; surgery_type: string; current_day: number; risk_level: string; risk_score: number; status?: string }) => (
+                <div key={p.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--ojas-100))] flex items-center justify-center text-xs font-semibold text-[hsl(var(--ojas-700))]">
+                      {p.full_name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{p.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{p.surgery_type}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={p.status || 'ACTIVE'} size="sm" />
+                    <Link to={`/patients/${p.id}`} className="text-[hsl(var(--ojas-600))] hover:text-[hsl(var(--ojas-700))] font-medium text-xs">
+                      View
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recovery Trend Chart */}
+      <div className="card-default">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={18} className="text-[hsl(var(--ojas-600))]" />
+            <h3 className="font-semibold">Recovery Progress Trend</h3>
+          </div>
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--success-500))]" />
+              <span className="text-muted-foreground">Completed</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--ojas-500))]" />
+              <span className="text-muted-foreground">Pending</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-sm bg-[hsl(var(--error-500))]" />
+              <span className="text-muted-foreground">Missed</span>
+            </div>
+          </div>
+        </div>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={recoveryTrend}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ fill: 'hsl(var(--muted))' }}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              />
+              <Bar dataKey="completed" fill="hsl(var(--success-500))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="pending" fill="hsl(var(--ojas-500))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="missed" fill="hsl(var(--error-500))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Dashboard
