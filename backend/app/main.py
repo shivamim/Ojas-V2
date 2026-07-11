@@ -17,7 +17,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from app.core.database import engine, Base, AsyncSessionLocal
+from app.core.database import engine, Base
 from app.core.config import settings
 from app.routers import auth, superadmin, hospitals, patients, escalations, reports, whatsapp
 
@@ -50,36 +50,45 @@ async def _seed_if_needed():
 async def lifespan(app: FastAPI):
     logging.info(f"Starting Ojas V3 in {settings.ENVIRONMENT} mode")
 
-    async with engine.begin() as conn:
-        def check_tables(sync_conn):
-            inspector = inspect(sync_conn)
-            return inspector.get_table_names()
-        try:
-            tables = await conn.run_sync(check_tables)
-        except SQLAlchemyError as e:
-            logging.error(f"Database connection failed: {e}")
-            tables = []
+    def check_tables(sync_conn):
+        inspector = inspect(sync_conn)
+        return inspector.get_table_names()
 
-    if 'users' not in tables:
-        logging.info("Tables not found — creating...")
+    # 1. Check existing tables
+    tables = []
+    try:
+        async with engine.begin() as conn:
+            tables = await conn.run_sync(check_tables)
+    except SQLAlchemyError as e:
+        logging.error(f"Database connection failed: {e}")
+        tables = []
+
+    tables_missing = 'users' not in tables
+
+    # 2. Create tables if missing (both prod and dev)
+    if tables_missing:
+        logging.info("Tables not found — creating schema...")
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-            logging.info("Tables created successfully")
-            # Update tables list after creation
-            tables = await conn.run_sync(check_tables)
+                # FIX: Re-check tables INSIDE the same connection block
+                tables = await conn.run_sync(check_tables)
+            logging.info("Database schema created successfully")
         except Exception as e:
             logging.error(f"Failed to create tables: {e}")
             tables = []
 
-    # FIX: Only seed in non-production environments
-    if 'users' not in tables and _IS_PROD:
-        logging.error("Production database empty! Manual migration required.")
-        logging.error("Do NOT auto-seed production databases. Deploy failed or migration missing.")
-        raise RuntimeError("Production DB initialization failed - manual intervention required")
-    elif 'users' not in tables and not _IS_PROD:
+    # 3. If tables are still missing after creation, fail hard
+    if 'users' not in tables:
+        logging.error("Database tables missing after creation attempt!")
+        raise RuntimeError("DB initialization failed — manual intervention required")
+
+    # 4. Seed ONLY in non-production environments
+    if tables_missing and not _IS_PROD:
         logging.info("Seeding development database with initial data...")
         asyncio.create_task(_seed_if_needed())
+    elif tables_missing and _IS_PROD:
+        logging.info("Production database ready. Admin user must be created manually via API.")
 
     yield
     logging.info("Shutting down...")
