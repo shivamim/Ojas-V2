@@ -1,50 +1,45 @@
 ```
-# Environment variables
-.env
-
-# Dependencies
-.venv/
-venv/
-node_modules/
-
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-.venv.bak/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+
+# Logs
 *.log
-.git/refs/replace/*
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Coverage
+.coverage
+htmlcov/
+.coverage.*
+
+# Testing
 .pytest_cache/
 .mypy_cache/
-.hypothesis/
 
-# Build and distribution artifacts
-build/
-dist/
-*.egg
-*.egg-info/
-*.so
-.libs/
-.deps/
-
-# IDE specific
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Dependencies
+venv/
+.venv/
+.env/
+lib/
+share/
+bin/
 
 # OS generated files
 .DS_Store
