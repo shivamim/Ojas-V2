@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { api as apiClient } from '@/api/client'
+import apiClient from '@/api/client'
 import {
   Stethoscope,
   Shield,
@@ -35,7 +35,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  HelpCircle,
 } from 'lucide-react'
 
 const navLinks = [
