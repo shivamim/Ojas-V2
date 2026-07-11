@@ -1,132 +1,139 @@
-import { useLocation, Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
   Users,
-  UserPlus,
   AlertTriangle,
   FileText,
+  Settings,
   Building2,
   ClipboardList,
-  LogOut,
   X,
-  Stethoscope,
-  Settings,
+  ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
 
-interface SidebarProps {
-  isOpen: boolean
-  setIsOpen: (open: boolean) => void
-}
-
-const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
-  const { user, logout } = useAuth()
+const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const { user } = useAuth()
   const location = useLocation()
+  const [collapsed, setCollapsed] = useState(false)
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'COORDINATOR', 'DOCTOR'] },
-    { path: '/patients', label: 'Patients', icon: Users, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'COORDINATOR', 'DOCTOR'] },
-    { path: '/patients/new', label: 'New Patient', icon: UserPlus, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'COORDINATOR'] },
-    { path: '/escalations', label: 'Escalations', icon: AlertTriangle, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'COORDINATOR', 'DOCTOR'] },
-    { path: '/reports', label: 'NABH Reports', icon: FileText, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR'] },
-    { path: '/settings', label: 'Settings', icon: Settings, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'COORDINATOR', 'DOCTOR'] },
-    { path: '/superadmin/hospitals', label: 'Hospitals', icon: Building2, roles: ['SUPER_ADMIN'] },
-    { path: '/superadmin/audit', label: 'Audit Logs', icon: ClipboardList, roles: ['SUPER_ADMIN'] },
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/patients', icon: Users, label: 'Patients' },
+    { to: '/escalations', icon: AlertTriangle, label: 'Escalations' },
+    { to: '/reports', icon: FileText, label: 'Reports' },
+    { to: '/settings', icon: Settings, label: 'Settings' },
   ]
 
-  const visibleNav = navItems.filter((item) => item.roles.includes(user?.role || ''))
+  const superAdminItems = [
+    { to: '/superadmin/hospitals', icon: Building2, label: 'Hospitals' },
+    { to: '/superadmin/audit-logs', icon: ClipboardList, label: 'Audit Logs' },
+  ]
 
-  const isActive = (path: string) => {
-    if (path === '/dashboard') return location.pathname === '/dashboard'
-    return location.pathname.startsWith(path)
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/')
+
+  const NavLink = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => {
+    const active = isActive(to)
+    return (
+      <Link
+        to={to}
+        onClick={onClose}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative group ${
+          active
+            ? 'bg-[hsl(var(--ojas-50))] text-[hsl(var(--ojas-700))] font-medium'
+            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+        }`}
+      >
+        {active && (
+          <motion.div
+            layoutId="sidebar-active"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[hsl(var(--ojas-500))] rounded-r-full"
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          />
+        )}
+        <Icon size={20} className={active ? 'text-[hsl(var(--ojas-600))]' : 'text-slate-400 group-hover:text-slate-600'} />
+        {!collapsed && <span className="text-sm">{label}</span>}
+      </Link>
+    )
   }
-
-  const renderNavContent = () => (
-    <>
-      <div className="p-5">
-        <Link to="/dashboard" className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-[hsl(var(--ojas-600))] rounded-xl flex items-center justify-center">
-            <Stethoscope className="text-white w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="font-bold text-base text-foreground leading-tight">Ojas</h1>
-            <p className="text-[10px] text-muted-foreground leading-none">Post-Discharge Care</p>
-          </div>
-        </Link>
-      </div>
-
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto" aria-label="Main navigation">
-        {visibleNav.map((item) => {
-          const Icon = item.icon
-          const active = isActive(item.path)
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                active
-                  ? 'bg-[hsl(var(--ojas-50))] text-[hsl(var(--ojas-700))] border border-[hsl(var(--ojas-200))]'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-              aria-current={active ? 'page' : undefined}
-            >
-              <Icon size={18} className={active ? 'text-[hsl(var(--ojas-600))]' : 'text-muted-foreground group-hover:text-foreground'} />
-              {item.label}
-              {active && <ChevronRight size={14} className="ml-auto opacity-50" />}
-            </Link>
-          )
-        })}
-      </nav>
-
-      <div className="p-3 border-t mt-auto">
-        <div className="px-3 py-2.5 bg-muted/60 rounded-lg mb-2">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Signed in as</p>
-          <p className="text-sm font-medium text-foreground truncate">{user?.email}</p>
-          <span className="inline-block mt-1 text-[10px] uppercase tracking-wider font-bold text-[hsl(var(--ojas-600))] bg-[hsl(var(--ojas-50))] px-2 py-0.5 rounded">
-            {(user?.role || '').replace('_', ' ')}
-          </span>
-        </div>
-        <button
-          onClick={logout}
-          className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-medium text-[hsl(var(--error-700))] hover:bg-[hsl(var(--error-50))] rounded-lg transition-colors"
-        >
-          <LogOut size={18} />
-          Sign Out
-        </button>
-      </div>
-    </>
-  )
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 bg-card border-r flex-col z-40">
-        {renderNavContent()}
-      </aside>
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+            onClick={onClose}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Mobile Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 w-64 bg-card border-r flex-col z-50 transform transition-transform lg:hidden ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+      {/* Sidebar */}
+      <motion.aside
+        className={`fixed top-0 left-0 z-50 h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ${
+          collapsed ? 'w-20' : 'w-64'
+        } ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        <div className="p-4 border-b flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
-            <div className="w-8 h-8 bg-[hsl(var(--ojas-600))] rounded-lg flex items-center justify-center">
-              <Stethoscope className="text-white w-4 h-4" />
+        {/* Logo */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--ojas-600))] flex items-center justify-center shrink-0">
+              <span className="text-white font-bold text-sm">O</span>
             </div>
-            <span className="font-bold">Ojas</span>
+            {!collapsed && <span className="font-bold text-lg">Ojas</span>}
           </Link>
-          <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-muted rounded-lg" aria-label="Close menu">
-            <X size={18} className="text-muted-foreground" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="hidden lg:flex p-1 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
+            <button onClick={onClose} className="lg:hidden p-1 hover:bg-slate-100 rounded-lg">
+              <X size={18} />
+            </button>
+          </div>
         </div>
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {renderNavContent()}
-        </div>
-      </aside>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavLink key={item.to} {...item} />
+          ))}
+
+          {user?.role === 'SUPER_ADMIN' && (
+            <>
+              {!collapsed && <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mt-4">Super Admin</div>}
+              {collapsed && <div className="my-4 border-t border-slate-100" />}
+              {superAdminItems.map((item) => (
+                <NavLink key={item.to} {...item} />
+              ))}
+            </>
+          )}
+        </nav>
+
+        {/* User Mini Profile */}
+        {!collapsed && (
+          <div className="p-4 border-t border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[hsl(var(--ojas-100))] flex items-center justify-center text-xs font-bold text-[hsl(var(--ojas-700))]">
+                {user?.full_name?.charAt(0) || 'U'}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-medium truncate">{user?.full_name || 'User'}</p>
+                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </motion.aside>
     </>
   )
 }
