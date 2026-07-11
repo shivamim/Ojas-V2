@@ -1,4 +1,5 @@
 import httpx
+from fastapi import HTTPException
 from app.core.config import settings
 
 async def send_whatsapp_message(to: str, message: str, buttons: list = None):
@@ -27,9 +28,24 @@ async def send_whatsapp_message(to: str, message: str, buttons: list = None):
     else:
         payload["text"] = {"body": message}
 
-    async with httpx.AsyncClient() as client:
-        r = await client.post(settings.WHATSAPP_API_URL, json=payload, headers=headers)
-        return r.json()
+    # Add timeout and retry logic for production reliability
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            r = await client.post(settings.WHATSAPP_API_URL, json=payload, headers=headers)
+            r.raise_for_status()
+            return r.json()
+        except httpx.TimeoutException:
+            print(f"WhatsApp timeout for {to}")
+            # Don't raise - fail gracefully to avoid blocking patient enrollment
+            return {"id": "timeout-msg-id", "status": "failed_timeout"}
+        except httpx.HTTPStatusError as e:
+            print(f"WhatsApp HTTP error: {e.response.status_code}")
+            # Don't raise - fail gracefully to avoid blocking patient enrollment
+            return {"id": "http-error-msg-id", "status": "failed_http_error"}
+        except Exception as e:
+            print(f"WhatsApp unexpected error: {e}")
+            # Don't raise - fail gracefully to avoid blocking patient enrollment
+            return {"id": "error-msg-id", "status": "failed_error"}
 
 
 async def send_template_message(to: str, template_name: str, language_code: str, variables: list[str]) -> dict:
@@ -70,9 +86,20 @@ async def send_template_message(to: str, template_name: str, language_code: str,
         }
     }
 
-    async with httpx.AsyncClient() as client:
-        r = await client.post(settings.WHATSAPP_API_URL, json=payload, headers=headers)
-        return r.json()
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            r = await client.post(settings.WHATSAPP_API_URL, json=payload, headers=headers)
+            r.raise_for_status()
+            return r.json()
+        except httpx.TimeoutException:
+            print(f"WhatsApp template timeout for {to}")
+            return {"id": "timeout-template-id", "status": "failed_timeout"}
+        except httpx.HTTPStatusError as e:
+            print(f"WhatsApp template HTTP error: {e.response.status_code}")
+            return {"id": "http-error-template-id", "status": "failed_http_error"}
+        except Exception as e:
+            print(f"WhatsApp template unexpected error: {e}")
+            return {"id": "error-template-id", "status": "failed_error"}
 
 
 async def send_family_nudge(family_mobile: str, patient_name: str, day: int):
