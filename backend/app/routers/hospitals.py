@@ -66,7 +66,7 @@ async def update_my_hospital(
     req: HospitalUpdate, 
     request: Request, 
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(require_permission(Permission.PATIENT_UPDATE))
+    current_user: CurrentUser = Depends(require_permission(Permission.HOSPITAL_MANAGE))
 ):
     hospital_id = require_tenant(request)
     
