@@ -149,3 +149,36 @@ async def send_breach_alert_email(admin_email: str, details: str) -> dict:
     except Exception as e:
         print(f"[ERROR] Failed to send breach alert: {e}")
         return {"status": "failed", "error": str(e)}
+
+
+async def send_email(to: str, subject: str, body: str) -> dict:
+    """
+    Generic email sender for any transactional email.
+    Falls back to logging if RESEND_API_KEY is not configured.
+    """
+    if not settings.RESEND_API_KEY:
+        print(f"[SIMULATION] Email to {to}")
+        print(f"[SIMULATION] Subject: {subject}")
+        print(f"[SIMULATION] Body: {body}")
+        return {"status": "simulated", "email": to, "subject": subject}
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": "Ojas HealthTech <noreply@ojas.care>",
+                    "to": [to],
+                    "subject": subject,
+                    "html": body.replace("\n", "<br>")
+                }
+            )
+            response.raise_for_status()
+            return response.json()
+    except Exception as e:
+        print(f"[ERROR] Failed to send email: {e}")
+        return {"status": "failed", "error": str(e)}

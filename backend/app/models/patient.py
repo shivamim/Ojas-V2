@@ -41,3 +41,17 @@ class Patient(Base):
     checkins = relationship("CheckIn", back_populates="patient", cascade="all, delete")
     escalations = relationship("Escalation", back_populates="patient", cascade="all, delete")
     timeline = relationship("TimelineEvent", back_populates="patient", cascade="all, delete")
+
+
+class Grievance(Base):
+    """DPDPA-compliant grievance tracking for patient complaints and data requests."""
+    __tablename__ = "grievances"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    contact_info = Column(String)  # Phone or UHID for identification
+    message = Column(Text)
+    status = Column(String, default="OPEN")  # OPEN, IN_PROGRESS, RESOLVED
+    resolved_at = Column(DateTime, nullable=True)
+    resolution_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

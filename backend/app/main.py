@@ -23,6 +23,9 @@ from app.routers import auth, superadmin, hospitals, patients, escalations, repo
 # FIX: Import models so Base.metadata is populated before create_all runs
 import app.models
 
+# Import grievance router from patients module
+from app.routers.patients import grievance_router
+
 limiter = Limiter(key_func=get_remote_address)
 
 _IS_PROD = settings.ENVIRONMENT == "production"
@@ -199,6 +202,7 @@ app.include_router(patients.router)
 app.include_router(escalations.router)
 app.include_router(reports.router)
 app.include_router(whatsapp.router)
+app.include_router(grievance_router)  # DPDPA grievance redressal
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
