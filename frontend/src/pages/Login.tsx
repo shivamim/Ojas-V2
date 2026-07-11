@@ -1,187 +1,189 @@
-import { useState, type FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useLogin } from '@/api/hooks'
+import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
-import {
-  Stethoscope,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  Loader2,
-  ArrowLeft,
-  Shield,
-  Lock,
-  Zap,
-} from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Link, useNavigate } from 'react-router-dom'
+import { Stethoscope, HeartPulse, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 
 const Login = () => {
+  const { login } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
-  const navigate = useNavigate()
-  const loginMutation = useLogin()
-  const { login } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const [shake, setShake] = useState(false)
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    try {
-      const data = await loginMutation.mutateAsync({ email, password })
-      login(data)
-      navigate('/dashboard')
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { status: number; data?: { detail?: string } }; code?: string; message?: string }
-      const isNetworkError = !axiosErr.response && (axiosErr.code === 'ECONNABORTED' || axiosErr.code === 'ERR_NETWORK')
-      const isTimeout = axiosErr.code === 'ECONNABORTED' || axiosErr.message?.includes('timeout')
+    if (!email.trim() || !password.trim()) {
+      toast.error('Please enter both email and password')
+      setShake(true)
+      setTimeout(() => setShake(false), 400)
+      return
+    }
 
-      if (isNetworkError && !isTimeout) {
-        setError('Cannot reach backend. Check your internet or backend status.')
-      } else if (isTimeout) {
-        setError('Request timed out. Please try again in a few seconds.')
-      } else if (axiosErr.response?.status && axiosErr.response.status >= 500) {
-        setError(`Server error (${axiosErr.response.status}). Please try again.`)
+    setIsLoading(true)
+    try {
+      await login(email, password)
+      toast.success('Welcome back!')
+      if (rememberMe) {
+        localStorage.setItem('ojas_remember_email', email)
       } else {
-        setError(axiosErr.response?.data?.detail || 'Invalid credentials. Please try again.')
+        localStorage.removeItem('ojas_remember_email')
       }
+      navigate('/dashboard')
+    } catch (err: any) {
+      setShake(true)
+      setTimeout(() => setShake(false), 400)
+      toast.error(err?.response?.data?.detail || 'Invalid credentials. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
+  // Floating icons for background animation
+  const floatingIcons = [
+    { Icon: Stethoscope, x: '10%', y: '20%', delay: 0, duration: 6 },
+    { Icon: HeartPulse, x: '85%', y: '15%', delay: 1, duration: 8 },
+    { Icon: Stethoscope, x: '75%', y: '75%', delay: 2, duration: 7 },
+    { Icon: HeartPulse, x: '15%', y: '80%', delay: 0.5, duration: 9 },
+  ]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-[hsl(var(--ojas-50))] to-background flex">
-      {/* Left side - branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[hsl(var(--ojas-700))] to-[hsl(var(--ojas-900))] relative overflow-hidden items-center justify-center">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/5 rounded-full blur-2xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[hsl(var(--ojas-600))] rounded-full blur-3xl opacity-20" />
+    <div className="min-h-screen flex bg-slate-50 relative overflow-hidden">
+      {/* Left Panel - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[hsl(var(--ojas-700))] to-[hsl(var(--ojas-500))] relative items-center justify-center p-12">
+        {/* Floating background icons */}
+        {floatingIcons.map((item, i) => (
+          <motion.div
+            key={i}
+            className="absolute text-white/10"
+            style={{ left: item.x, top: item.y }}
+            animate={{ y: [0, -20, 0], rotate: [0, 5, -5, 0] }}
+            transition={{ duration: item.duration, repeat: Infinity, delay: item.delay, ease: 'easeInOut' }}
+          >
+            <item.Icon size={64} strokeWidth={1} />
+          </motion.div>
+        ))}
 
-        <div className="relative z-10 max-w-md mx-auto text-center text-white px-8">
-          <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-8 border border-white/20">
-            <Stethoscope className="text-white w-10 h-10" />
-          </div>
-          <h2 className="text-3xl font-bold mb-4">Ojas HealthTech</h2>
-          <p className="text-[hsl(var(--ojas-200))] text-lg leading-relaxed mb-10">
-            NABH-compliant post-discharge patient recovery monitoring trusted by leading hospitals across India.
-          </p>
-
-          <div className="grid grid-cols-1 gap-4 text-left">
-            {[
-              { icon: Shield, title: 'Enterprise Security', desc: 'AES-256 encryption, RBAC, audit trails' },
-              { icon: Zap, title: 'AI-Powered', desc: 'Real-time risk scoring and smart escalations' },
-              { icon: Lock, title: 'NABH Compliant', desc: 'Automated compliance reporting' },
-            ].map((item) => (
-              <div key={item.title} className="flex items-center gap-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
-                  <item.icon size={18} className="text-[hsl(var(--ojas-300))]" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">{item.title}</p>
-                  <p className="text-xs text-[hsl(var(--ojas-300))]">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="relative z-10 text-center text-white max-w-md">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-8 backdrop-blur-sm">
+              <Stethoscope size={40} className="text-white" />
+            </div>
+            <h1 className="text-4xl font-bold mb-4">Ojas</h1>
+            <p className="text-lg text-white/90 leading-relaxed">
+              Intelligent Post-Discharge Care Management for better patient outcomes and reduced readmissions.
+            </p>
+          </motion.div>
         </div>
       </div>
 
-      {/* Right side - login form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
-              <ArrowLeft size={16} />
-              Back to home
-            </Link>
-
-            <div className="lg:hidden flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-[hsl(var(--ojas-600))] rounded-xl flex items-center justify-center">
-                <Stethoscope className="text-white w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="font-bold text-lg leading-tight">Ojas</h1>
-                <p className="text-xs text-muted-foreground">HealthTech</p>
-              </div>
-            </div>
-
-            <h2 className="text-2xl font-bold mb-1">Welcome back</h2>
-            <p className="text-muted-foreground">Sign in to your dashboard</p>
+      {/* Right Panel - Login Form */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
+            <p className="text-slate-500 mt-1">Sign in to your account</p>
           </div>
 
-          <div className="card-default">
-            {error && (
-              <div className="alert-error mb-4 flex items-start gap-2.5" role="alert">
-                <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                <div className="flex-1">{error}</div>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <AnimatePresence>
+            <motion.form
+              onSubmit={handleSubmit}
+              animate={shake ? { x: [0, -8, 8, -8, 8, 0] } : {}}
+              transition={{ duration: 0.4 }}
+              className="space-y-5"
+            >
               <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-1.5">
-                  Email
-                </label>
-                <input
+                <Label htmlFor="email" className="form-label">Email Address</Label>
+                <Input
                   id="email"
                   type="email"
-                  required
-                  autoComplete="email"
+                  placeholder="doctor@hospital.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field"
-                  placeholder="you@hospital.com"
-                  aria-label="Email address"
+                  className="form-input h-12"
+                  autoComplete="email"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-1.5">
-                  Password
-                </label>
+                <Label htmlFor="password" className="form-label">Password</Label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    required
-                    autoComplete="current-password"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input-field pr-10"
-                    placeholder="Enter your password"
-                    aria-label="Password"
+                    className="form-input h-12 pr-12"
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                    tabIndex={-1}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    className="border-slate-300 data-[state=checked]:bg-[hsl(var(--ojas-600))] data-[state=checked]:border-[hsl(var(--ojas-600))]"
+                  />
+                  <Label htmlFor="remember" className="text-sm text-slate-600 cursor-pointer">Remember me</Label>
+                </div>
+                <Link to="/forgot-password" className="text-sm text-[hsl(var(--ojas-600))] hover:text-[hsl(var(--ojas-700))] font-medium">
+                  Forgot password?
+                </Link>
+              </div>
+
               <Button
                 type="submit"
-                disabled={loginMutation.isPending}
-                className="w-full bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))] py-2.5"
+                disabled={isLoading}
+                className="w-full h-12 btn-primary text-base"
               >
-                {loginMutation.isPending ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin mr-2" />
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 size={18} className="animate-spin" />
                     Signing in...
-                  </>
+                  </span>
                 ) : (
                   'Sign In'
                 )}
               </Button>
-            </form>
-          </div>
+            </motion.form>
+          </AnimatePresence>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Protected by enterprise-grade security.
+          <p className="text-center text-sm text-slate-500 mt-6">
+            Don't have an account?{' '}
+            <Link to="/contact" className="text-[hsl(var(--ojas-600))] hover:text-[hsl(var(--ojas-700))] font-medium">
+              Contact Sales
+            </Link>
           </p>
-        </div>
+        </motion.div>
       </div>
     </div>
   )
