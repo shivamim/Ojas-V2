@@ -3,18 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useEscalations } from '@/api/hooks'
 import { Button } from '@/components/ui/button'
-import {
-  Bell,
-  LogOut,
-  Menu,
-  Settings,
-  User,
-  AlertTriangle,
-  Info,
-  CheckCircle2,
-  X,
-  Clock,
-} from 'lucide-react'
+import { Bell, LogOut, Menu, Settings, User, AlertTriangle, Info, X, Clock } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 
