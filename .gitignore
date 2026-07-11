@@ -1,25 +1,16 @@
 ```
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
 # Dependencies
-.venv/
-venv/
-env/
-.env
-.env.local
-.env.*
+node_modules/
 
-# Build artifacts
+# Build outputs
 dist/
 build/
-*.egg-info/
+*.js.map
 
-# Logs
-*.log
+# Environment
+.env
+.env.local
+*.env.*
 
 # Editors
 .vscode/
@@ -27,29 +18,27 @@ build/
 *.swp
 *.swo
 
+# Logs
+*.log
+
+# Temp files
+*.tmp
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
 # OS
 .DS_Store
 Thumbs.db
 
-# Testing
-.coverage
-htmlcov/
-.coverage.*
-.pytest_cache/
-.mypy_cache/
-
-# Distribution / Packaging
-*.tar.gz
-*.whl
-*.egg
-
-# Compiled Binary files
-*.class
-*.o
-*.so
-*.dll
-*.exe
-*.out
-*.a
-*.obj
+# Backend database (if it's a generated/build artifact)
+*.db
 ```

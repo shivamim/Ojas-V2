@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null
   login: (responseOrUser: { access_token?: string; refresh_token?: string; user?: User } | User) => void
   logout: () => Promise<void>
+  isLoading: boolean
   loading: boolean
   isLoggedIn: boolean
   isSuperAdmin: boolean
@@ -84,6 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user,
       login,
       logout,
+      isLoading: loading,
       loading,
       isLoggedIn: !!user,
       isSuperAdmin: user?.role === 'SUPER_ADMIN',

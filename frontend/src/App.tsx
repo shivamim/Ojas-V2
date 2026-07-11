@@ -1,10 +1,11 @@
-import { Suspense, lazy, ErrorInfo, ReactNode } from 'react'
+import { Suspense, lazy } from 'react'
+import type { ErrorInfo, ReactNode } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Toaster } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
-import Header from '@/components/Header'
-import Sidebar from '@/components/Sidebar'
+import Header from '@/components/layout/Header'
+import Sidebar from '@/components/layout/Sidebar'
 import { useState } from 'react'
 
 // Lazy load pages for better performance
