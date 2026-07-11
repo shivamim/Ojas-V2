@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
+import { z } from 'zod'
+import { api } from '@/api/client'
 import {
   Stethoscope,
   Shield,
@@ -23,6 +30,12 @@ import {
   Bell,
   TrendingUp,
   Award,
+  Send,
+  Loader2,
+  Mail,
+  Phone,
+  MapPin,
+  HelpCircle,
 } from 'lucide-react'
 
 const navLinks = [
@@ -172,10 +185,48 @@ const pricingPlans = [
   },
 ]
 
+// Contact form validation schema
+const contactSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email address'),
+  hospitalName: z.string().min(1, 'Hospital name is required'),
+  message: z.string().min(10, 'Message must be at least 10 characters'),
+})
+
+type ContactForm = z.infer<typeof contactSchema>
+
+// Animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-50px' },
+  transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] },
+}
+
+const staggerContainer = {
+  initial: {},
+  whileInView: { transition: { staggerChildren: 0.1 } },
+  viewport: { once: true },
+}
+
+const staggerItem = {
+  initial: { opacity: 0, y: 20 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true },
+  transition: { duration: 0.4 },
+}
+
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+
+  // Contact form state
+  const [form, setForm] = useState<Partial<ContactForm>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof ContactForm, string>>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -188,6 +239,58 @@ export default function LandingPage() {
     const el = document.querySelector(href)
     if (el) el.scrollIntoView({ behavior: 'smooth' })
   }
+
+  // Contact form handlers
+  const validate = () => {
+    const result = contactSchema.safeParse(form)
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof ContactForm, string>> = {}
+      result.error.errors.forEach((e) => {
+        const path = e.path[0] as keyof ContactForm
+        fieldErrors[path] = e.message
+      })
+      setErrors(fieldErrors)
+      return false
+    }
+    setErrors({})
+    return true
+  }
+
+  const handleChange = (field: keyof ContactForm, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!validate()) {
+      toast.error('Please fix the errors in the form')
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      await api.post('/contact', form)
+      setSubmitted(true)
+      toast.success("Message sent successfully! We'll get back to you within 24 hours.")
+      setForm({})
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to send message. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const Tooltip = ({ text }: { text: string }) => (
+    <div className="group relative inline-flex ml-1">
+      <HelpCircle size={14} className="text-slate-400 cursor-help" />
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-slate-800 text-white text-xs rounded-lg px-3 py-2 z-50">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-white">
@@ -243,29 +346,36 @@ export default function LandingPage() {
         </div>
 
         {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-b shadow-lg">
-            <div className="section-container py-4 space-y-2">
-              {navLinks.map((link) => (
-                <button
-                  key={link.href}
-                  onClick={() => scrollToSection(link.href)}
-                  className="block w-full text-left px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg"
-                >
-                  {link.label}
-                </button>
-              ))}
-              <div className="pt-2 flex flex-col gap-2">
-                <Button variant="outline" className="w-full" asChild>
-                  <Link to="/login">Sign In</Link>
-                </Button>
-                <Button className="w-full bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))]" asChild>
-                  <Link to="/login">Get Started</Link>
-                </Button>
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="lg:hidden bg-white border-b shadow-lg overflow-hidden"
+            >
+              <div className="section-container py-4 space-y-2">
+                {navLinks.map((link) => (
+                  <button
+                    key={link.href}
+                    onClick={() => scrollToSection(link.href)}
+                    className="block w-full text-left px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                  >
+                    {link.label}
+                  </button>
+                ))}
+                <div className="pt-2 flex flex-col gap-2">
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to="/login">Sign In</Link>
+                  </Button>
+                  <Button className="w-full bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))]" asChild>
+                    <Link to="/login">Get Started</Link>
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* Hero Section */}
@@ -276,46 +386,57 @@ export default function LandingPage() {
 
         <div className="section-container relative">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--ojas-100))] text-[hsl(var(--ojas-700))] rounded-full text-sm font-medium mb-8">
-              <Award size={16} />
-              NABH-Compliant Post-Discharge Monitoring
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--ojas-100))] text-[hsl(var(--ojas-700))] rounded-full text-sm font-medium mb-8">
+                <Award size={16} />
+                NABH-Compliant Post-Discharge Monitoring
+              </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-foreground mb-6 leading-[1.1]">
-              Reduce Readmissions.
-              <br />
-              <span className="bg-gradient-to-r from-[hsl(var(--ojas-600))] to-[hsl(var(--ojas-800))] bg-clip-text text-transparent">
-                Improve Recovery.
-              </span>
-            </h1>
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-foreground mb-6 leading-[1.1]">
+                Reduce Readmissions.
+                <br />
+                <span className="bg-gradient-to-r from-[hsl(var(--ojas-600))] to-[hsl(var(--ojas-800))] bg-clip-text text-transparent">
+                  Improve Recovery.
+                </span>
+              </h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              Ojas automates post-discharge patient monitoring through AI-powered WhatsApp check-ins,
-              predictive risk scoring, and NABH-compliant reporting.
-            </p>
+              <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+                Ojas automates post-discharge patient monitoring through AI-powered WhatsApp check-ins,
+                predictive risk scoring, and NABH-compliant reporting.
+              </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button
-                size="lg"
-                className="bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))] px-8 py-6 text-base"
-                asChild
-              >
-                <Link to="/login">
-                  Start Free Trial <ArrowRight size={18} className="ml-1" />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="px-8 py-6 text-base"
-                onClick={() => scrollToSection('#how-it-works')}
-              >
-                See How It Works
-              </Button>
-            </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+                <Button
+                  size="lg"
+                  className="bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))] px-8 py-6 text-base transition-all duration-200 active:scale-[0.98]"
+                  asChild
+                >
+                  <Link to="/login">
+                    Start Free Trial <ArrowRight size={18} className="ml-1" />
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="px-8 py-6 text-base border-2 border-[hsl(var(--ojas-600))] text-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-50))] transition-all duration-200 active:scale-[0.98]"
+                  onClick={() => scrollToSection('#how-it-works')}
+                >
+                  See How It Works
+                </Button>
+              </div>
+            </motion.div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto"
+            >
               {[
                 { value: '40%', label: 'Fewer Complications' },
                 { value: '14 Days', label: 'Monitoring Protocol' },
@@ -327,7 +448,7 @@ export default function LandingPage() {
                   <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
                 </div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
 
@@ -341,28 +462,31 @@ export default function LandingPage() {
       {/* Features Section */}
       <section id="features" className="py-20 lg:py-28 bg-muted/30">
         <div className="section-container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">Features</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything You Need for Post-Discharge Care</h2>
             <p className="text-muted-foreground text-lg">
               Comprehensive tools designed specifically for Indian healthcare standards
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div {...staggerContainer} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature) => (
-              <div
+              <motion.div
                 key={feature.title}
-                className="card-hover group"
+                {...staggerItem}
+                whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(0,0,0,0.08)' }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                className="card-default group cursor-pointer"
               >
                 <div className="w-11 h-11 bg-[hsl(var(--ojas-100))] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[hsl(var(--ojas-200))] transition-colors">
                   <feature.icon size={22} className="text-[hsl(var(--ojas-700))]" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -370,7 +494,7 @@ export default function LandingPage() {
       <section className="py-20 lg:py-28">
         <div className="section-container">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
+            <motion.div {...fadeInUp}>
               <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">Why Ojas</p>
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">Built for Indian Healthcare</h2>
               <div className="space-y-5">
@@ -391,13 +515,19 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-            </div>
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-br from-[hsl(var(--ojas-200))] to-[hsl(var(--ojas-400))] rounded-3xl opacity-20 blur-xl" />
-              <div className="relative card-default space-y-4">
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="relative"
+            >
+              <div className="bg-white rounded-2xl border border-border shadow-lg p-6 space-y-5">
                 <div className="flex items-center justify-between pb-4 border-b">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
                       <Activity size={20} className="text-[hsl(var(--ojas-700))]" />
                     </div>
                     <div>
@@ -444,7 +574,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -452,20 +582,30 @@ export default function LandingPage() {
       {/* How It Works */}
       <section id="how-it-works" className="py-20 lg:py-28 bg-muted/30">
         <div className="section-container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">How It Works</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Simple Four-Step Process</h2>
             <p className="text-muted-foreground text-lg">
               From enrollment to recovery, Ojas handles everything automatically
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {howItWorks.map((item, idx) => (
-              <div key={item.step} className="relative text-center">
-                <div className="w-16 h-16 bg-[hsl(var(--ojas-600))] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-[hsl(var(--ojas-600)/0.2)]">
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                className="relative text-center"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="w-16 h-16 bg-[hsl(var(--ojas-600))] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-[hsl(var(--ojas-600)/0.2)]"
+                >
                   <item.icon size={28} className="text-white" />
-                </div>
+                </motion.div>
                 <span className="text-xs font-bold text-[hsl(var(--ojas-600))] uppercase tracking-wider">{item.step}</span>
                 <h3 className="text-lg font-semibold mt-2 mb-2">{item.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
@@ -475,7 +615,7 @@ export default function LandingPage() {
                     <ArrowRight size={20} className="text-[hsl(var(--ojas-300))]" />
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -484,15 +624,15 @@ export default function LandingPage() {
       {/* Security Section */}
       <section id="security" className="py-20 lg:py-28">
         <div className="section-container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">Security</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Enterprise-Grade Security</h2>
             <p className="text-muted-foreground text-lg">
               Your patient data is protected with the highest security standards
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div {...staggerContainer} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               { icon: Lock, title: 'AES-256 Encryption', desc: 'All patient PII encrypted at rest with PBKDF2HMAC key derivation' },
               { icon: Shield, title: 'RBAC Access Control', desc: '4-tier role hierarchy with granular permission guards' },
@@ -501,7 +641,12 @@ export default function LandingPage() {
               { icon: Clock, title: 'JWT Authentication', desc: 'Short-lived access tokens with secure refresh token rotation' },
               { icon: TrendingUp, title: 'Rate Limiting', desc: 'Configurable per-endpoint throttling to prevent abuse' },
             ].map((item) => (
-              <div key={item.title} className="card-default flex items-start gap-4">
+              <motion.div
+                key={item.title}
+                {...staggerItem}
+                whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(0,0,0,0.08)' }}
+                className="card-default flex items-start gap-4"
+              >
                 <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center shrink-0">
                   <item.icon size={18} className="text-[hsl(var(--ojas-700))]" />
                 </div>
@@ -509,26 +654,31 @@ export default function LandingPage() {
                   <h4 className="font-semibold mb-1">{item.title}</h4>
                   <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Testimonials */}
       <section className="py-20 lg:py-28 bg-[hsl(var(--ojas-950))] text-white">
         <div className="section-container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold text-[hsl(var(--ojas-400))] uppercase tracking-wider mb-3">Testimonials</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Trusted by Leading Hospitals</h2>
             <p className="text-[hsl(var(--ojas-300))] text-lg">
               See what healthcare professionals say about Ojas
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <motion.div {...staggerContainer} className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((t) => (
-              <div key={t.author} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+              <motion.div
+                key={t.author}
+                {...staggerItem}
+                whileHover={{ y: -4 }}
+                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/10"
+              >
                 <Heart size={20} className="text-[hsl(var(--ojas-400))] mb-4" />
                 <p className="text-[hsl(var(--ojas-100))] leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-3">
@@ -540,68 +690,64 @@ export default function LandingPage() {
                     <p className="text-xs text-[hsl(var(--ojas-400))]">{t.role}</p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Pricing */}
       <section id="pricing" className="py-20 lg:py-28 bg-muted/30">
         <div className="section-container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">Pricing</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
             <p className="text-muted-foreground text-lg">
               Start free, upgrade when you are ready. No hidden fees.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {pricingPlans.map((plan) => (
-              <div
+              <motion.div
                 key={plan.name}
-                className={`rounded-2xl p-6 ${
+                whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(0,0,0,0.08)' }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                className={`rounded-2xl p-6 transition-all duration-300 ${
                   plan.highlighted
                     ? 'bg-[hsl(var(--ojas-700))] text-white shadow-xl shadow-[hsl(var(--ojas-700)/0.2)] scale-105'
                     : 'bg-white border border-border'
                 }`}
               >
-                <p className={`text-sm font-semibold mb-2 ${plan.highlighted ? 'text-[hsl(var(--ojas-300))]' : 'text-[hsl(var(--ojas-600))]'}`}>
-                  {plan.name}
-                </p>
+                <p className="text-sm font-medium mb-2">{plan.name}</p>
                 <div className="flex items-baseline gap-1 mb-2">
                   <span className="text-3xl font-bold">{plan.price}</span>
-                  {plan.period && (
-                    <span className={`text-sm ${plan.highlighted ? 'text-[hsl(var(--ojas-300))]' : 'text-muted-foreground'}`}>
-                      {plan.period}
-                    </span>
-                  )}
+                  <span className={`text-sm ${plan.highlighted ? 'text-[hsl(var(--ojas-200))]' : 'text-muted-foreground'}`}>
+                    {plan.period}
+                  </span>
                 </div>
                 <p className={`text-sm mb-6 ${plan.highlighted ? 'text-[hsl(var(--ojas-200))]' : 'text-muted-foreground'}`}>
                   {plan.description}
                 </p>
-
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-3 mb-6">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 size={16} className={plan.highlighted ? 'text-[hsl(var(--ojas-300))]' : 'text-[hsl(var(--success-500))]'} />
-                      {f}
+                    <li key={f} className="flex items-start gap-2 text-sm">
+                      <CheckCircle2 size={16} className={`shrink-0 mt-0.5 ${plan.highlighted ? 'text-[hsl(var(--ojas-300))]' : 'text-[hsl(var(--ojas-600))]'}`} />
+                      <span>{f}</span>
                     </li>
                   ))}
                 </ul>
-
                 <Button
-                  className={`w-full ${
+                  className={`w-full h-11 transition-all duration-200 active:scale-[0.98] ${
                     plan.highlighted
                       ? 'bg-white text-[hsl(var(--ojas-700))] hover:bg-[hsl(var(--ojas-50))]'
-                      : 'bg-[hsl(var(--ojas-600))] text-white hover:bg-[hsl(var(--ojas-700))]'
+                      : 'bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))] text-white'
                   }`}
                   asChild
                 >
                   <Link to="/login">{plan.cta}</Link>
                 </Button>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -610,13 +756,13 @@ export default function LandingPage() {
       {/* FAQ */}
       <section id="faq" className="py-20 lg:py-28">
         <div className="section-container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">FAQ</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
             <p className="text-muted-foreground text-lg">
               Everything you need to know about Ojas
             </p>
-          </div>
+          </motion.div>
 
           <div className="max-w-3xl mx-auto space-y-3">
             {faqs.map((faq, idx) => (
@@ -629,14 +775,24 @@ export default function LandingPage() {
                   <span className="font-medium pr-4">{faq.question}</span>
                   <ChevronDown
                     size={18}
-                    className={`text-muted-foreground shrink-0 transition-transform ${openFaq === idx ? 'rotate-180' : ''}`}
+                    className={`text-muted-foreground shrink-0 transition-transform duration-300 ${openFaq === idx ? 'rotate-180' : ''}`}
                   />
                 </button>
-                {openFaq === idx && (
-                  <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">
-                    {faq.answer}
-                  </div>
-                )}
+                <AnimatePresence>
+                  {openFaq === idx && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">
+                        {faq.answer}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ))}
           </div>
@@ -649,7 +805,7 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="card-default">
               <div className="grid lg:grid-cols-2 gap-12">
-                <div>
+                <motion.div {...fadeInUp}>
                   <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">Contact</p>
                   <h2 className="text-3xl font-bold mb-4">Get in Touch</h2>
                   <p className="text-muted-foreground mb-8">
@@ -658,11 +814,29 @@ export default function LandingPage() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
-                        <MessageSquare size={18} className="text-[hsl(var(--ojas-700))]" />
+                        <Mail size={18} className="text-[hsl(var(--ojas-700))]" />
                       </div>
                       <div>
                         <p className="text-sm font-medium">Email</p>
                         <p className="text-sm text-muted-foreground">team.ojas@outlook.com</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
+                        <Phone size={18} className="text-[hsl(var(--ojas-700))]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Phone</p>
+                        <p className="text-sm text-muted-foreground">+91 98765 43210</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
+                        <MapPin size={18} className="text-[hsl(var(--ojas-700))]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Location</p>
+                        <p className="text-sm text-muted-foreground">Bengaluru, Karnataka, India</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -675,44 +849,125 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                </div>
-                <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">First Name</label>
-                      <input className="input-field" placeholder="John" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Last Name</label>
-                      <input className="input-field" placeholder="Doe" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Email</label>
-                    <input type="email" className="input-field" placeholder="john@hospital.com" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Hospital Name</label>
-                    <input className="input-field" placeholder="Apollo Hospitals" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Message</label>
-                    <textarea className="input-field min-h-[100px]" placeholder="Tell us about your requirements..." />
-                  </div>
-                  <Button type="submit" className="w-full bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))]">
-                    Send Message
-                  </Button>
-                </form>
+                </motion.div>
+
+                <AnimatePresence mode="wait">
+                  {submitted ? (
+                    <motion.div
+                      key="success"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="flex flex-col items-center justify-center text-center py-8"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                        <CheckCircle2 size={32} className="text-green-600" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">Message Sent!</h3>
+                      <p className="text-slate-600 mb-6">We&apos;ll get back to you within 24 hours.</p>
+                      <Button variant="outline" onClick={() => setSubmitted(false)}>
+                        Send another message
+                      </Button>
+                    </motion.div>
+                  ) : (
+                    <motion.form
+                      key="form"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onSubmit={handleSubmit}
+                      className="space-y-4"
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="form-label">First Name *</Label>
+                          <Input
+                            value={form.firstName || ''}
+                            onChange={(e) => handleChange('firstName', e.target.value)}
+                            placeholder="John"
+                            className={`form-input h-11 ${errors.firstName ? 'error' : ''}`}
+                          />
+                          {errors.firstName && <p className="form-error">{errors.firstName}</p>}
+                        </div>
+                        <div>
+                          <Label className="form-label">Last Name *</Label>
+                          <Input
+                            value={form.lastName || ''}
+                            onChange={(e) => handleChange('lastName', e.target.value)}
+                            placeholder="Doe"
+                            className={`form-input h-11 ${errors.lastName ? 'error' : ''}`}
+                          />
+                          {errors.lastName && <p className="form-error">{errors.lastName}</p>}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="form-label">Email *</Label>
+                        <Input
+                          type="email"
+                          value={form.email || ''}
+                          onChange={(e) => handleChange('email', e.target.value)}
+                          placeholder="john@hospital.com"
+                          className={`form-input h-11 ${errors.email ? 'error' : ''}`}
+                        />
+                        {errors.email && <p className="form-error">{errors.email}</p>}
+                      </div>
+                      <div>
+                        <Label className="form-label">Hospital Name *</Label>
+                        <Input
+                          value={form.hospitalName || ''}
+                          onChange={(e) => handleChange('hospitalName', e.target.value)}
+                          placeholder="Apollo Hospitals"
+                          className={`form-input h-11 ${errors.hospitalName ? 'error' : ''}`}
+                        />
+                        {errors.hospitalName && <p className="form-error">{errors.hospitalName}</p>}
+                      </div>
+                      <div>
+                        <Label className="form-label">Message *</Label>
+                        <Textarea
+                          value={form.message || ''}
+                          onChange={(e) => handleChange('message', e.target.value)}
+                          placeholder="Tell us about your requirements..."
+                          rows={4}
+                          className={`form-input ${errors.message ? 'error' : ''}`}
+                        />
+                        {errors.message && <p className="form-error">{errors.message}</p>}
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full h-12 btn-primary text-base gap-2 transition-all duration-200 active:scale-[0.98]"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 size={18} className="animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send size={18} />
+                            Send Message
+                          </>
+                        )}
+                      </Button>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
+      {/* CTA — FIXED: White button now visible with border */}
       <section className="py-20 lg:py-28">
         <div className="section-container">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[hsl(var(--ojas-700))] to-[hsl(var(--ojas-900))] p-8 sm:p-12 lg:p-16 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[hsl(var(--ojas-700))] to-[hsl(var(--ojas-900))] p-8 sm:p-12 lg:p-16 text-center"
+          >
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
             <div className="relative">
@@ -725,7 +980,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button
                   size="lg"
-                  className="bg-white text-[hsl(var(--ojas-700))] hover:bg-[hsl(var(--ojas-50))] px-8"
+                  className="bg-white text-[hsl(var(--ojas-700))] hover:bg-[hsl(var(--ojas-50))] px-8 h-12 font-semibold transition-all duration-300 active:scale-[0.98]"
                   asChild
                 >
                   <Link to="/login">
@@ -734,15 +989,14 @@ export default function LandingPage() {
                 </Button>
                 <Button
                   size="lg"
-                  variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10 px-8"
+                  className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-[hsl(var(--ojas-700))] px-8 h-12 font-semibold transition-all duration-300 active:scale-[0.98]"
                   onClick={() => scrollToSection('#contact')}
                 >
                   Contact Sales
                 </Button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -764,17 +1018,17 @@ export default function LandingPage() {
             <div>
               <p className="font-semibold mb-3">Product</p>
               <ul className="space-y-2">
-                <li><button onClick={() => scrollToSection('#features')} className="text-sm text-muted-foreground hover:text-foreground">Features</button></li>
-                <li><button onClick={() => scrollToSection('#pricing')} className="text-sm text-muted-foreground hover:text-foreground">Pricing</button></li>
-                <li><button onClick={() => scrollToSection('#security')} className="text-sm text-muted-foreground hover:text-foreground">Security</button></li>
+                <li><button onClick={() => scrollToSection('#features')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</button></li>
+                <li><button onClick={() => scrollToSection('#pricing')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</button></li>
+                <li><button onClick={() => scrollToSection('#security')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Security</button></li>
               </ul>
             </div>
             <div>
               <p className="font-semibold mb-3">Company</p>
               <ul className="space-y-2">
-                <li><button onClick={() => scrollToSection('#how-it-works')} className="text-sm text-muted-foreground hover:text-foreground">How It Works</button></li>
-                <li><button onClick={() => scrollToSection('#faq')} className="text-sm text-muted-foreground hover:text-foreground">FAQ</button></li>
-                <li><button onClick={() => scrollToSection('#contact')} className="text-sm text-muted-foreground hover:text-foreground">Contact</button></li>
+                <li><button onClick={() => scrollToSection('#how-it-works')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">How It Works</button></li>
+                <li><button onClick={() => scrollToSection('#faq')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</button></li>
+                <li><button onClick={() => scrollToSection('#contact')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</button></li>
               </ul>
             </div>
             <div>
