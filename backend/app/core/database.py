@@ -12,13 +12,16 @@ connect_args = {}
 if _IS_PROD and "supabase" in settings.DATABASE_URL.lower():
     connect_args["ssl"] = "require"
 
-if use_null_pool:
+# SQLite doesn't support pool_size/max_overflow - only use for PostgreSQL
+is_sqlite = "sqlite" in settings.DATABASE_URL.lower()
+
+if is_sqlite or use_null_pool:
     engine = create_async_engine(
         settings.DATABASE_URL,
         echo=False,
         future=True,
-        poolclass=NullPool,
-        pool_pre_ping=True,
+        poolclass=NullPool if is_sqlite else None,
+        pool_pre_ping=not is_sqlite,
         connect_args=connect_args,
     )
 else:

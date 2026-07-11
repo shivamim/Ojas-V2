@@ -1,19 +1,45 @@
-# Backend
-backend/__pycache__/
-backend/app/__pycache__/
-backend/app/*/__pycache__/
-backend/*.db
-backend/.env
-backend/venv/
-backend/data/
-
-# Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.env
-frontend/.env.*
-
-# General
-.DS_Store
-*.pyc
+```
+# Dependencies
+.venv/
+venv/
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# Coverage reports
+.coverage
+htmlcov/
+.coverage.*
+coverage.xml
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+```

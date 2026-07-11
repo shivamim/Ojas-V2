@@ -1,17 +1,192 @@
 import uuid
+import hashlib
+import hmac
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from datetime import datetime
 
 from app.core.database import get_db
 from app.core.tenant import require_tenant
 from app.core.encryption import decrypt_field
 from app.core.rbac import Permission, require_permission, get_current_user, CurrentUser
+from app.core.config import settings
 from app.models.patient import Patient
+from app.models.checkin import CheckIn
+from app.models.escalation import Escalation
 from app.models.whatsapp_log import WhatsAppMessageLog
-from app.services.whatsapp import send_whatsapp_message
+from app.services.whatsapp import send_whatsapp_message, send_template_message
+from app.services.ai_scoring import calculate_risk_score
 
 router = APIRouter(prefix="/whatsapp", tags=["WhatsApp"])
+
+
+@router.get("/webhook")
+async def verify_webhook(request: Request):
+    """
+    Meta WhatsApp subscription verification handshake.
+    Returns hub.challenge if verify_token matches.
+    """
+    hub_mode = request.query_params.get("hub.mode")
+    hub_verify_token = request.query_params.get("hub.verify_token")
+    hub_challenge = request.query_params.get("hub.challenge")
+    
+    if hub_mode == "subscribe" and hub_verify_token == settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN:
+        return int(hub_challenge) if hub_challenge.isdigit() else hub_challenge
+    
+    raise HTTPException(status_code=403, detail="Verification failed")
+
+
+@router.post("/webhook")
+async def handle_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Handle inbound WhatsApp messages from patients.
+    - Matches sender phone to Patient.mobile (via HMAC lookup hash)
+    - Finds earliest PENDING check-in
+    - Parses response and updates check-in
+    - Triggers AI scoring and escalation if needed
+    - Handles HELP/SOS keywords for immediate critical escalation
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"status": "ok"}  # Never error back to Meta
+    
+    if not payload.get("entry"):
+        return {"status": "ok"}
+    
+    for entry in payload["entry"]:
+        if not entry.get("changes"):
+            continue
+        
+        for change in entry["changes"]:
+            if change.get("field") != "messages":
+                continue
+            
+            value = change.get("value", {})
+            messages = value.get("messages", [])
+            
+            for msg in messages:
+                if msg.get("type") != "text":
+                    continue  # Skip images, audio, etc. for now
+                
+                from_number = msg.get("from")
+                message_text = msg.get("text", {}).get("body", "").strip()
+                
+                if not from_number or not message_text:
+                    continue
+                
+                # Match patient by phone number
+                # Since mobile is encrypted, we need to decrypt-and-compare
+                # In production, add a deterministic mobile_lookup_hash column
+                result = await db.execute(select(Patient))
+                all_patients = result.scalars().all()
+                
+                matched_patient = None
+                for p in all_patients:
+                    try:
+                        decrypted_mobile = decrypt_field(p.mobile)
+                        if decrypted_mobile and (decrypted_mobile == from_number or 
+                           decrypted_mobile.replace("+91", "") == from_number.replace("+91", "")):
+                            matched_patient = p
+                            break
+                    except Exception:
+                        continue
+                
+                if not matched_patient:
+                    print(f"[WEBHOOK] No patient found for {from_number}")
+                    return {"status": "ok"}  # Don't error for unmatched senders
+                
+                # Check for HELP/SOS - immediate critical escalation
+                if any(keyword in message_text.upper() for keyword in ["HELP", "SOS", "EMERGENCY"]):
+                    escalation = Escalation(
+                        patient_id=matched_patient.id,
+                        level="CRITICAL",
+                        status="OPEN",
+                        trigger_type="PATIENT_HELP_REQUEST",
+                        trigger_detail=f"Patient sent: {message_text[:200]}",
+                        description="Patient explicitly requested help via WhatsApp"
+                    )
+                    db.add(escalation)
+                    matched_patient.status = "ESCALATED"
+                    await db.commit()
+                    
+                    print(f"[WEBHOOK] CRITICAL escalation created for patient {matched_patient.id}")
+                    return {"status": "ok"}
+                
+                # Find earliest PENDING check-in
+                checkin_result = await db.execute(
+                    select(CheckIn)
+                    .where(CheckIn.patient_id == matched_patient.id, CheckIn.status == "PENDING")
+                    .order_by(CheckIn.day_number.asc())
+                )
+                checkin = checkin_result.scalar_one_or_none()
+                
+                if not checkin:
+                    print(f"[WEBHOOK] No pending check-in for patient {matched_patient.id}")
+                    return {"status": "ok"}
+                
+                # Parse simple text responses
+                # Expected format: "pain: 3, fever: yes" or "3" or "fever no"
+                responses = {}
+                pain_level = 0
+                
+                # Try to extract pain level
+                if "pain:" in message_text.lower():
+                    try:
+                        pain_str = message_text.lower().split("pain:")[1].split(",")[0].strip()
+                        pain_level = int(pain_str.split()[0])
+                    except (ValueError, IndexError):
+                        pass
+                elif message_text[0].isdigit():
+                    try:
+                        pain_level = int(message_text[0])
+                    except ValueError:
+                        pass
+                
+                responses["pain"] = str(pain_level)
+                
+                # Check for fever
+                if any(word in message_text.lower() for word in ["fever: yes", "fever:yes", "fever y", "has fever", "fever present"]):
+                    responses["fever"] = "yes"
+                elif any(word in message_text.lower() for word in ["fever: no", "fever:no", "fever n", "no fever", "without fever"]):
+                    responses["fever"] = "no"
+                else:
+                    responses["fever"] = "N/A"
+                
+                # Update check-in
+                checkin.status = "COMPLETED"
+                checkin.replied_at = datetime.utcnow()
+                checkin.responses = responses
+                checkin.pain_level = pain_level
+                
+                # Run AI scoring
+                ai_result = calculate_risk_score(responses, {"response_rate": matched_patient.response_rate})
+                checkin.risk_score = ai_result["score"]
+                checkin.risk_level = ai_result["level"]
+                checkin.risk_reasons = ai_result["reasons"]
+                
+                matched_patient.risk_score = ai_result["score"]
+                matched_patient.risk_level = ai_result["level"]
+                matched_patient.current_day = checkin.day_number
+                
+                # Create escalation if critical
+                if ai_result["level"] == "CRITICAL":
+                    escalation = Escalation(
+                        patient_id=matched_patient.id,
+                        level="CRITICAL",
+                        status="OPEN",
+                        trigger_type="ai_risk",
+                        trigger_detail=f"Day {checkin.day_number} webhook response: {ai_result['score']}",
+                        description="; ".join(ai_result["reasons"])
+                    )
+                    db.add(escalation)
+                    matched_patient.status = "ESCALATED"
+                
+                await db.commit()
+                print(f"[WEBHOOK] Check-in completed for patient {matched_patient.id}, day {checkin.day_number}")
+    
+    return {"status": "ok"}
 
 
 @router.post("/send-checkin/{patient_id}/{day}")
@@ -35,11 +210,11 @@ async def send_checkin(
 
     mobile = decrypt_field(p.mobile)
     name = decrypt_field(p.full_name)
-
-    message = (
-        f"Day {day} Check-in: Hi {name}, how are you feeling today? "
-        "Please reply with your pain level (0-4) and if you have fever, swelling, or bleeding."
-    )
+    
+    # Use template message for business-initiated outreach
+    from app.services.whatsapp_templates import get_template, format_template
+    template = get_template(p.preferred_language or "en", day)
+    message_text = format_template(template, {"patient_name": name, "day": str(day)})
 
     log = WhatsAppMessageLog(
         patient_id=p.id,
@@ -50,9 +225,15 @@ async def send_checkin(
     await db.commit()
 
     try:
-        resp = await send_whatsapp_message(mobile, message)
+        # Use template message for compliance with Meta policy
+        resp = await send_template_message(
+            mobile, 
+            template["name"], 
+            template["language_code"], 
+            [name, str(day)] if "day" in template.get("variables", []) else [name]
+        )
     except Exception as e:
-        print(f"WhatsApp send failed: {e}")
+        print(f"WhatsApp template send failed: {e}")
         resp = {"error": str(e), "status": "failed"}
 
     return {"message": "Check-in sent", "whatsapp_response": resp}

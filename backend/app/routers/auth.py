@@ -1,5 +1,6 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from pydantic import BaseModel, EmailStr, Field, validator
@@ -61,6 +62,9 @@ async def login(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ):
+    limiter: Limiter = request.app.state.limiter
+    await limiter.limit("5/minute")(request)
+    
     result = await db.execute(select(User).where(User.email == req.email))
     user = result.scalar_one_or_none()
 
@@ -114,8 +118,11 @@ async def login(
     }
 
 
-@router.post("/refresh")
-async def refresh_token(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
+@router.post("/refresh", response_model=dict)
+async def refresh_token(req: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    limiter: Limiter = request.app.state.limiter
+    await limiter.limit("10/minute")(request)
+    
     payload = decode_token(req.refresh_token)
     if not payload or payload.get("type") != "refresh":
         raise HTTPException(401, "Invalid refresh token")
