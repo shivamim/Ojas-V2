@@ -2,7 +2,6 @@ import { useAuth } from '@/context/AuthContext'
 import { usePatients, useEscalations } from '@/api/hooks'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import RiskBadge from '@/components/RiskBadge'
 import StatusBadge from '@/components/StatusBadge'
 import {
   Users,
