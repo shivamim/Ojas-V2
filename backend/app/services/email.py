@@ -1,20 +1,41 @@
 """
 Email service using Resend for transactional emails.
-Falls back to logging if RESEND_API_KEY is not configured.
+
+Production Requirements:
+- Set RESEND_API_KEY environment variable
+- Configure verified sender domain in Resend dashboard
+- For high volume, consider email queue with retry logic
 """
+import logging
 import httpx
+from typing import Optional
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 async def send_invite_email(email: str, invite_link: str, hospital_name: str) -> dict:
     """
     Send hospital invitation email via Resend.
-    Returns response dict or simulation notice.
+    
+    Args:
+        email: Recipient email address
+        invite_link: URL to accept the invitation
+        hospital_name: Name of the inviting hospital
+        
+    Returns:
+        Response dict with status and message ID or error details
     """
     if not settings.RESEND_API_KEY:
-        print(f"[SIMULATION] Email invite to {email} for {hospital_name}")
-        print(f"[SIMULATION] Invite link: {invite_link}")
-        return {"status": "simulated", "email": email, "link": invite_link}
+        logger.warning(
+            f"RESEND_API_KEY not configured. Email invite to {email} for {hospital_name} skipped."
+        )
+        return {
+            "status": "skipped", 
+            "reason": "RESEND_API_KEY not configured",
+            "email": email, 
+            "link": invite_link
+        }
     
     html_content = f"""
     <!DOCTYPE html>
@@ -44,7 +65,7 @@ async def send_invite_email(email: str, invite_link: str, hospital_name: str) ->
     """
     
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 "https://api.resend.com/emails",
                 headers={
@@ -59,21 +80,41 @@ async def send_invite_email(email: str, invite_link: str, hospital_name: str) ->
                 }
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            logger.info(f"Invite email sent successfully to {email}: {result.get('id')}")
+            return result
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Failed to send invite email (HTTP {e.response.status_code}): {e}")
+        return {"status": "failed", "error": f"HTTP {e.response.status_code}: {str(e)}"}
     except httpx.HTTPError as e:
-        print(f"[ERROR] Failed to send invite email: {e}")
+        logger.error(f"Failed to send invite email (network error): {e}")
         return {"status": "failed", "error": str(e)}
     except Exception as e:
-        print(f"[ERROR] Unexpected error sending invite email: {e}")
+        logger.error(f"Unexpected error sending invite email: {e}")
         return {"status": "failed", "error": str(e)}
 
 
 async def send_password_reset_email(email: str, reset_link: str) -> dict:
-    """Send password reset email via Resend."""
+    """
+    Send password reset email via Resend.
+    
+    Args:
+        email: User's email address
+        reset_link: Password reset URL with token
+        
+    Returns:
+        Response dict with status and message ID or error details
+    """
     if not settings.RESEND_API_KEY:
-        print(f"[SIMULATION] Password reset email to {email}")
-        print(f"[SIMULATION] Reset link: {reset_link}")
-        return {"status": "simulated", "email": email, "link": reset_link}
+        logger.warning(
+            f"RESEND_API_KEY not configured. Password reset email to {email} skipped."
+        )
+        return {
+            "status": "skipped", 
+            "reason": "RESEND_API_KEY not configured",
+            "email": email, 
+            "link": reset_link
+        }
     
     html_content = f"""
     <!DOCTYPE html>
@@ -83,12 +124,13 @@ async def send_password_reset_email(email: str, reset_link: str) -> dict:
         <p>Click the link below to reset your password:</p>
         <a href="{reset_link}" style="display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Reset Password</a>
         <p>This link expires in 1 hour.</p>
+        <p>If you didn't request this, you can safely ignore this email.</p>
     </body>
     </html>
     """
     
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 "https://api.resend.com/emails",
                 headers={
@@ -103,23 +145,46 @@ async def send_password_reset_email(email: str, reset_link: str) -> dict:
                 }
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            logger.info(f"Password reset email sent successfully to {email}: {result.get('id')}")
+            return result
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Failed to send password reset email (HTTP {e.response.status_code}): {e}")
+        return {"status": "failed", "error": f"HTTP {e.response.status_code}: {str(e)}"}
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to send password reset email (network error): {e}")
+        return {"status": "failed", "error": str(e)}
     except Exception as e:
-        print(f"[ERROR] Failed to send password reset email: {e}")
+        logger.error(f"Unexpected error sending password reset email: {e}")
         return {"status": "failed", "error": str(e)}
 
 
 async def send_breach_alert_email(admin_email: str, details: str) -> dict:
-    """Send security breach alert email to administrators."""
+    """
+    Send security breach alert email to administrators.
+    
+    Args:
+        admin_email: Administrator's email address
+        details: Description of the security incident
+        
+    Returns:
+        Response dict with status and message ID or error details
+    """
     if not settings.RESEND_API_KEY:
-        print(f"[SIMULATION] Breach alert to {admin_email}: {details}")
-        return {"status": "simulated", "email": admin_email}
+        logger.critical(
+            f"RESEND_API_KEY not configured. Breach alert to {admin_email} skipped. DETAILS: {details}"
+        )
+        return {
+            "status": "skipped", 
+            "reason": "RESEND_API_KEY not configured",
+            "email": admin_email
+        }
     
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #dc2626;">Security Alert</h2>
+        <h2 style="color: #dc2626;\">Security Alert</h2>
         <p>A potential security breach has been detected:</p>
         <div style="background: #fef2f2; padding: 15px; border-left: 4px solid #dc2626; margin: 20px 0;">
             <pre style="margin: 0; white-space: pre-wrap;">{details}</pre>
@@ -130,7 +195,7 @@ async def send_breach_alert_email(admin_email: str, details: str) -> dict:
     """
     
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 "https://api.resend.com/emails",
                 headers={
@@ -145,25 +210,46 @@ async def send_breach_alert_email(admin_email: str, details: str) -> dict:
                 }
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            logger.critical(f"Breach alert sent to {admin_email}: {result.get('id')}")
+            return result
+    except httpx.HTTPStatusError as e:
+        logger.critical(f"Failed to send breach alert (HTTP {e.response.status_code}): {e}")
+        return {"status": "failed", "error": f"HTTP {e.response.status_code}: {str(e)}"}
+    except httpx.HTTPError as e:
+        logger.critical(f"Failed to send breach alert (network error): {e}")
+        return {"status": "failed", "error": str(e)}
     except Exception as e:
-        print(f"[ERROR] Failed to send breach alert: {e}")
+        logger.critical(f"Unexpected error sending breach alert: {e}")
         return {"status": "failed", "error": str(e)}
 
 
-async def send_email(to: str, subject: str, body: str) -> dict:
+async def send_email(to: str, subject: str, body: str, html: Optional[str] = None) -> dict:
     """
     Generic email sender for any transactional email.
-    Falls back to logging if RESEND_API_KEY is not configured.
+    
+    Args:
+        to: Recipient email address
+        subject: Email subject line
+        body: Plain text or HTML body content
+        html: Optional separate HTML content (if not provided, body is treated as HTML)
+        
+    Returns:
+        Response dict with status and message ID or error details
     """
     if not settings.RESEND_API_KEY:
-        print(f"[SIMULATION] Email to {to}")
-        print(f"[SIMULATION] Subject: {subject}")
-        print(f"[SIMULATION] Body: {body}")
-        return {"status": "simulated", "email": to, "subject": subject}
+        logger.warning(
+            f"RESEND_API_KEY not configured. Email to {to} with subject '{subject}' skipped."
+        )
+        return {
+            "status": "skipped", 
+            "reason": "RESEND_API_KEY not configured",
+            "email": to, 
+            "subject": subject
+        }
     
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 "https://api.resend.com/emails",
                 headers={
@@ -174,11 +260,19 @@ async def send_email(to: str, subject: str, body: str) -> dict:
                     "from": "Ojas HealthTech <noreply@ojas.care>",
                     "to": [to],
                     "subject": subject,
-                    "html": body.replace("\n", "<br>")
+                    "html": html or body.replace("\n", "<br>")
                 }
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            logger.info(f"Email sent successfully to {to} ({subject}): {result.get('id')}")
+            return result
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Failed to send email (HTTP {e.response.status_code}): {e}")
+        return {"status": "failed", "error": f"HTTP {e.response.status_code}: {str(e)}"}
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to send email (network error): {e}")
+        return {"status": "failed", "error": str(e)}
     except Exception as e:
-        print(f"[ERROR] Failed to send email: {e}")
+        logger.error(f"Unexpected error sending email: {e}")
         return {"status": "failed", "error": str(e)}
