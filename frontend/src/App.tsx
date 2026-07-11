@@ -2,7 +2,6 @@ import React, { Suspense, lazy } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Toaster } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
 import Header from '@/components/layout/Header'
 import Sidebar from '@/components/layout/Sidebar'
@@ -122,15 +121,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: ReactNode; allow
 function App() {
   return (
     <ErrorBoundary>
-      <Toaster
-        position="top-right"
-        richColors
-        closeButton
-        duration={4000}
-        toastOptions={{
-          className: 'rounded-xl shadow-lg border',
-        }}
-      />
       <Suspense
         fallback={
           <div className="min-h-screen flex items-center justify-center">
