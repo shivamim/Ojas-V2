@@ -11,14 +11,16 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, text, select
 from sqlalchemy.exc import SQLAlchemyError
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from app.core.database import engine, Base
+from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.config import settings
+from app.core.security import get_password_hash
+from app.models.user import User
 from app.routers import auth, superadmin, hospitals, patients, escalations, reports, whatsapp, contact
 
 # FIX: Import models so Base.metadata is populated before create_all runs
@@ -30,6 +32,31 @@ from app.routers.patients import grievance_router
 limiter = Limiter(key_func=get_remote_address)
 
 _IS_PROD = settings.ENVIRONMENT == "production"
+
+
+async def _ensure_admin_exists():
+    """Create a default superadmin if no users exist (production safety net)."""
+    async with AsyncSessionLocal() as db:
+        try:
+            result = await db.execute(select(User))
+            if result.scalar_one_or_none():
+                return  # Users already exist, do nothing
+            
+            admin = User(
+                id=uuid.uuid4(),
+                email="admin@ojas.care",
+                hashed_password=get_password_hash("admin123"),
+                full_name="System Superadmin",
+                role="SUPER_ADMIN",
+                hospital_id=None,
+                is_active=True
+            )
+            db.add(admin)
+            await db.commit()
+            logging.info("✅ Default admin created: admin@ojas.care / admin123")
+        except Exception as e:
+            logging.error(f"Failed to create default admin: {e}")
+            await db.rollback()
 
 
 async def _seed_if_needed():
@@ -83,12 +110,15 @@ async def lifespan(app: FastAPI):
         logging.error("Database tables missing after creation attempt!")
         raise RuntimeError("DB initialization failed — manual intervention required")
 
-    # 4. Seed ONLY in non-production environments
+    # 4. Auto-create admin if no users exist (works in both dev and prod)
+    await _ensure_admin_exists()
+
+    # 5. Seed ONLY in non-production environments
     if tables_missing and not _IS_PROD:
         logging.info("Seeding development database with initial data...")
         asyncio.create_task(_seed_if_needed())
     elif tables_missing and _IS_PROD:
-        logging.info("Production database ready. Admin user must be created manually via API.")
+        logging.info("Production database ready.")
 
     yield
     logging.info("Shutting down...")
