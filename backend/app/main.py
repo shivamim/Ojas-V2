@@ -19,7 +19,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.database import engine, Base
 from app.core.config import settings
-from app.routers import auth, superadmin, hospitals, patients, escalations, reports, whatsapp
+from app.routers import auth, superadmin, hospitals, patients, escalations, reports, whatsapp, contact
 
 # FIX: Import models so Base.metadata is populated before create_all runs
 import app.models
@@ -222,6 +222,7 @@ app.include_router(patients.router)
 app.include_router(escalations.router)
 app.include_router(reports.router)
 app.include_router(whatsapp.router)
+app.include_router(contact.router)  # Contact form endpoint
 app.include_router(grievance_router)  # DPDPA grievance redressal
 
 

@@ -272,10 +272,10 @@ export default function LandingPage() {
     try {
       await apiClient.post('/contact', form)
       setSubmitted(true)
-      toast.success("Message sent successfully! We'll get back to you within 24 hours.")
+      toast.success("Message sent successfully! We will get back to you soon.")
       setForm({})
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to send message. Please try again.')
+      toast.error('Failed to send message. Please try again later.')
     } finally {
       setIsSubmitting(false)
     }
@@ -650,12 +650,12 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 lg:py-28 bg-[hsl(var(--ojas-950))] text-white">
+      <section className="py-20 lg:py-28 bg-white">
         <div className="section-container">
           <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-sm font-semibold text-[hsl(var(--ojas-400))] uppercase tracking-wider mb-3">Testimonials</p>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Trusted by Leading Hospitals</h2>
-            <p className="text-[hsl(var(--ojas-300))] text-lg">
+            <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">Testimonials</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Trusted by Leading Hospitals</h2>
+            <p className="text-gray-600 text-lg">
               See what healthcare professionals say about Ojas
             </p>
           </motion.div>
@@ -666,17 +666,17 @@ export default function LandingPage() {
                 key={t.author}
                 {...staggerItem}
                 whileHover={{ y: -4 }}
-                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/10"
+                className="bg-gray-50 border border-gray-100 rounded-xl p-6 transition-all duration-300 hover:shadow-lg"
               >
-                <Heart size={20} className="text-[hsl(var(--ojas-400))] mb-4" />
-                <p className="text-[hsl(var(--ojas-100))] leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
+                <Heart size={20} className="text-[hsl(var(--ojas-600))] mb-4" />
+                <p className="text-gray-900 leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[hsl(var(--ojas-600))] rounded-full flex items-center justify-center text-sm font-bold">
+                  <div className="w-10 h-10 bg-[hsl(var(--ojas-600))] rounded-full flex items-center justify-center text-sm font-bold text-white">
                     {t.avatar}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">{t.author}</p>
-                    <p className="text-xs text-[hsl(var(--ojas-400))]">{t.role}</p>
+                    <p className="font-semibold text-sm text-gray-900">{t.author}</p>
+                    <p className="text-xs text-gray-600">{t.role}</p>
                   </div>
                 </div>
               </motion.div>
@@ -789,57 +789,57 @@ export default function LandingPage() {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="py-20 lg:py-28 bg-muted/30">
+      <section id="contact" className="py-20 lg:py-28 bg-slate-50">
         <div className="section-container">
-          <div className="max-w-4xl mx-auto">
-            <div className="card-default">
-              <div className="grid lg:grid-cols-2 gap-12">
-                <motion.div {...fadeInUp}>
-                  <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">Contact</p>
-                  <h2 className="text-3xl font-bold mb-4">Get in Touch</h2>
-                  <p className="text-muted-foreground mb-8">
-                    Ready to transform your post-discharge care? Our team is here to help you get started.
-                  </p>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
-                        <Mail size={18} className="text-[hsl(var(--ojas-700))]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Email</p>
-                        <p className="text-sm text-muted-foreground">team.ojas@outlook.com</p>
-                      </div>
+          <div className="max-w-6xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12">
+              <motion.div {...fadeInUp}>
+                <p className="text-sm font-semibold text-[hsl(var(--ojas-600))] uppercase tracking-wider mb-3">Contact</p>
+                <h2 className="text-3xl font-bold mb-4">Get in Touch</h2>
+                <p className="text-muted-foreground mb-8">
+                  Ready to transform your post-discharge care? Our team is here to help you get started.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
+                      <Mail size={18} className="text-[hsl(var(--ojas-700))]" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
-                        <Phone size={18} className="text-[hsl(var(--ojas-700))]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Phone</p>
-                        <p className="text-sm text-muted-foreground">+91 98765 43210</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
-                        <MapPin size={18} className="text-[hsl(var(--ojas-700))]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Location</p>
-                        <p className="text-sm text-muted-foreground">Bengaluru, Karnataka, India</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
-                        <Clock size={18} className="text-[hsl(var(--ojas-700))]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Support Hours</p>
-                        <p className="text-sm text-muted-foreground">Monday - Saturday, 9AM - 6PM IST</p>
-                      </div>
+                    <div>
+                      <p className="text-sm font-medium">Email</p>
+                      <p className="text-sm text-muted-foreground">team.ojas@outlook.com</p>
                     </div>
                   </div>
-                </motion.div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
+                      <Phone size={18} className="text-[hsl(var(--ojas-700))]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Phone</p>
+                      <p className="text-sm text-muted-foreground">+91 7007473337</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
+                      <MapPin size={18} className="text-[hsl(var(--ojas-700))]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-sm text-muted-foreground">Gurugram, Haryana, India</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
+                      <Clock size={18} className="text-[hsl(var(--ojas-700))]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Support Hours</p>
+                      <p className="text-sm text-muted-foreground">Monday - Saturday, 9AM - 6PM IST</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
 
+              <motion.div {...fadeInUp}>
                 <AnimatePresence mode="wait">
                   {submitted ? (
                     <motion.div
