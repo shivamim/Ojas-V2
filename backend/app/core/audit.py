@@ -2,6 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit_log import AuditLog
 from datetime import datetime, timezone
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def log_audit(
@@ -16,6 +19,12 @@ async def log_audit(
     success: bool = True, 
     details: dict = None
 ):
+    """
+    Log an audit trail entry for compliance and security monitoring.
+    
+    Audit logs are critical for DPDPA 2023 compliance and security investigations.
+    Failures are logged but don't block the main operation (non-fatal).
+    """
     try:
         uid = uuid.UUID(user_id) if user_id else None
     except (ValueError, TypeError):
@@ -39,8 +48,11 @@ async def log_audit(
             user_agent=user_agent,
             success=success,
             details=details or {},
-            timestamp=datetime.utcnow()   # ← FIXED: was datetime.now(timezone.utc)
+            timestamp=datetime.utcnow()
         )
         db.add(log)
+        await db.commit()
     except Exception as e:
-        print(f"Audit log error (non-fatal): {e}")
+        # Audit logging failures should not block operations, but must be logged
+        logger.error(f"Audit log error (non-fatal): {e}")
+        await db.rollback()

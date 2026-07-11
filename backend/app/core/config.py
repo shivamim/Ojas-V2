@@ -1,11 +1,14 @@
 import os
 import sys
 import secrets
+import logging
 from typing import List
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 _IS_PROD = os.getenv("ENVIRONMENT", "development").lower() == "production"
 
@@ -36,17 +39,17 @@ class Settings(BaseSettings):
 
         if not self.SECRET_KEY:
             if _IS_PROD:
-                print("FATAL: SECRET_KEY required in production", file=sys.stderr)
+                logger.critical("FATAL: SECRET_KEY required in production")
                 sys.exit(1)
             self.SECRET_KEY = secrets.token_urlsafe(32)
-            print("WARNING: Auto-generated SECRET_KEY", file=sys.stderr)
+            logger.warning("Auto-generated SECRET_KEY (development only)")
 
         if not self.ENCRYPTION_KEY:
             if _IS_PROD:
-                print("FATAL: ENCRYPTION_KEY required in production", file=sys.stderr)
+                logger.critical("FATAL: ENCRYPTION_KEY required in production")
                 sys.exit(1)
             self.ENCRYPTION_KEY = secrets.token_hex(16)
-            print("WARNING: Auto-generated ENCRYPTION_KEY", file=sys.stderr)
+            logger.warning("Auto-generated ENCRYPTION_KEY (development only)")
 
     @property
     def cors_origins(self) -> List[str]:
