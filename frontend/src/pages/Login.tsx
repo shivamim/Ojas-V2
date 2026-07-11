@@ -30,7 +30,7 @@ const Login = () => {
 
     setIsLoading(true)
     try {
-      await login(email, password)
+      await login({ email, password } as any)
       toast.success('Welcome back!')
       if (rememberMe) {
         localStorage.setItem('ojas_remember_email', email)
