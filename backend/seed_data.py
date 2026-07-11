@@ -21,66 +21,87 @@ async def seed(db: AsyncSession = None):
         close_session = True
 
     try:
-        from app.models.user import User
-        result = await db.execute(
-            select(User).where(User.email == "admin@ojas.care")
-        )
-        if result.scalar_one_or_none():
-            print("✅ Seed data already exists, skipping")
-            return
-
-        from app.models.hospital import Hospital
         from app.models.patient import Patient
+        from app.models.hospital import Hospital
+        from app.models.user import User
         from app.models.checkin import CheckIn
         from app.models.escalation import Escalation
         from app.models.timeline import TimelineEvent
 
-        superadmin = User(
-            id=uuid.uuid4(),
-            email="admin@ojas.care",
-            hashed_password=safe_hash("admin123"),
-            full_name="System Superadmin",
-            role="SUPER_ADMIN",
-            hospital_id=None,
-            is_active=True
-        )
-        db.add(superadmin)
+        # FIX: Check for patients instead of admin — seed runs even if admin exists
+        result = await db.execute(select(Patient))
+        if result.scalars().first():
+            print("✅ Seed data already exists, skipping")
+            return
 
-        hospital = Hospital(
-            id=uuid.uuid4(),
-            name="City Hospital",
-            city="Ghaziabad",
-            state="Uttar Pradesh",
-            bed_count=200,
-            nabh_level="Entry Level",
-            contact_email=encrypt_field("admin@cityhospital.com"),
-            contact_phone=encrypt_field("+91-120-4567890"),
-            plan_type="professional",
-            is_active=True
-        )
-        db.add(hospital)
-        await db.flush()
+        # Create superadmin if not exists (idempotent)
+        result = await db.execute(select(User).where(User.email == "admin@ojas.care"))
+        admin = result.scalar_one_or_none()
+        if not admin:
+            superadmin = User(
+                id=uuid.uuid4(),
+                email="admin@ojas.care",
+                hashed_password=safe_hash("admin123"),
+                full_name="System Superadmin",
+                role="SUPER_ADMIN",
+                hospital_id=None,
+                is_active=True
+            )
+            db.add(superadmin)
+            await db.flush()
+        else:
+            superadmin = admin
 
-        nurse = User(
-            id=uuid.uuid4(),
-            email="nurse@cityhospital.com",
-            hashed_password=safe_hash("nurse123"),
-            full_name="Nurse Anita",
-            role="COORDINATOR",
-            hospital_id=hospital.id,
-            is_active=True
-        )
-        doctor = User(
-            id=uuid.uuid4(),
-            email="dr.shikhar@cityhospital.com",
-            hashed_password=safe_hash("doctor123"),
-            full_name="Dr. Shikhar",
-            role="DOCTOR",
-            hospital_id=hospital.id,
-            is_active=True
-        )
-        db.add(nurse)
-        db.add(doctor)
+        # Create hospital if not exists
+        result = await db.execute(select(Hospital))
+        hospital = result.scalars().first()
+        if not hospital:
+            hospital = Hospital(
+                id=uuid.uuid4(),
+                name="City Hospital",
+                city="Ghaziabad",
+                state="Uttar Pradesh",
+                bed_count=200,
+                nabh_level="Entry Level",
+                contact_email=encrypt_field("admin@cityhospital.com"),
+                contact_phone=encrypt_field("+91-120-4567890"),
+                plan_type="professional",
+                is_active=True
+            )
+            db.add(hospital)
+            await db.flush()
+
+        # Create nurse if not exists
+        result = await db.execute(select(User).where(User.email == "nurse@cityhospital.com"))
+        nurse = result.scalar_one_or_none()
+        if not nurse:
+            nurse = User(
+                id=uuid.uuid4(),
+                email="nurse@cityhospital.com",
+                hashed_password=safe_hash("nurse123"),
+                full_name="Nurse Anita",
+                role="COORDINATOR",
+                hospital_id=hospital.id,
+                is_active=True
+            )
+            db.add(nurse)
+            await db.flush()
+
+        # Create doctor if not exists
+        result = await db.execute(select(User).where(User.email == "dr.shikhar@cityhospital.com"))
+        doctor = result.scalar_one_or_none()
+        if not doctor:
+            doctor = User(
+                id=uuid.uuid4(),
+                email="dr.shikhar@cityhospital.com",
+                hashed_password=safe_hash("doctor123"),
+                full_name="Dr. Shikhar",
+                role="DOCTOR",
+                hospital_id=hospital.id,
+                is_active=True
+            )
+            db.add(doctor)
+            await db.flush()
 
         patients_data = [
             {"name": "Rajesh Sharma", "mobile": "+91-98765-43210", "family": "+91-98765-43211", "age": 62, "surgery": "Total Knee Replacement", "doctor": "Dr. Shikhar", "specialty": "Orthopedics", "discharge": date(2026, 5, 10), "status": "ESCALATED", "day": 6, "bed": "Ward-4B-12", "uhid": "UHID-2026-0042", "risk_score": 85, "risk_level": "HIGH", "readmission_risk": "HIGH"},
