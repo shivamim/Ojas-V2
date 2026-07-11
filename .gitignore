@@ -2,43 +2,85 @@
 # Dependencies
 node_modules/
 
-# Build outputs
+# Build artifacts
 dist/
 build/
-*.js.map
+*.js
+*.ts
+*.tsx
 
-# Environment
+# Environment variables
 .env
 .env.local
 *.env.*
 
-# Editors
+# Logs
+*.log
+
+# Coverage reports
+coverage/
+htmlcov/
+*.coverage
+
+# IDE specific
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Logs
-*.log
-
-# Temp files
 *.tmp
 
-# Python
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Python specific
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
+*.so
 
-# Coverage
-coverage/
-htmlcov/
-.coverage
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
 
-# OS
-.DS_Store
-Thumbs.db
+# Distribution / packaging
+.Python
+*.egg-info/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Backend database (if it's a generated/build artifact)
-*.db
+# Transient / temporary files
+*~
+*.bak
+*.swp
+*.swo
+*~
+
+# Compression files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```

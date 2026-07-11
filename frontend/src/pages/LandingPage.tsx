@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { api } from '@/api/client'
+import { api as apiClient } from '@/api/client'
 import {
   Stethoscope,
   Shield,
@@ -245,7 +245,7 @@ export default function LandingPage() {
     const result = contactSchema.safeParse(form)
     if (!result.success) {
       const fieldErrors: Partial<Record<keyof ContactForm, string>> = {}
-      result.error.errors.forEach((e) => {
+      result.error.issues.forEach((e) => {
         const path = e.path[0] as keyof ContactForm
         fieldErrors[path] = e.message
       })
@@ -271,7 +271,7 @@ export default function LandingPage() {
     }
     setIsSubmitting(true)
     try {
-      await api.post('/contact', form)
+      await apiClient.post('/contact', form)
       setSubmitted(true)
       toast.success("Message sent successfully! We'll get back to you within 24 hours.")
       setForm({})
@@ -281,16 +281,6 @@ export default function LandingPage() {
       setIsSubmitting(false)
     }
   }
-
-  const Tooltip = ({ text }: { text: string }) => (
-    <div className="group relative inline-flex ml-1">
-      <HelpCircle size={14} className="text-slate-400 cursor-help" />
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-slate-800 text-white text-xs rounded-lg px-3 py-2 z-50">
-        {text}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
-      </div>
-    </div>
-  )
 
   return (
     <div className="min-h-screen bg-white">
