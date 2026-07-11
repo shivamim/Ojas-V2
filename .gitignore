@@ -1,5 +1,1 @@
-(frontend/src/pages/LandingPage.tsx is a source file, and there are no build artifacts, dependencies, or temporary files in the changes)
-
-```ts
-
-```
+(frontend/src/pages/LandingPage.tsx is a source file, and there are no build artifacts, dependencies, or temporary files in the changes, so no .gitignore rules are needed)

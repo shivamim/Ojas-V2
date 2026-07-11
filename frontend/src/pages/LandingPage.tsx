@@ -941,7 +941,7 @@ export default function LandingPage() {
                     </motion.form>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>
