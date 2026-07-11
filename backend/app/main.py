@@ -19,51 +19,42 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.config import settings
-from app.core.security import get_password_hash
-from app.models.user import User
 from app.routers import auth, superadmin, hospitals, patients, escalations, reports, whatsapp, contact
 
-# FIX: Import models so Base.metadata is populated before create_all runs
 import app.models
-
-# Import grievance router from patients module
 from app.routers.patients import grievance_router
 
 limiter = Limiter(key_func=get_remote_address)
-
 _IS_PROD = settings.ENVIRONMENT == "production"
 
 
-async def _ensure_admin_exists():
+async def _ensure_admin_exists(db):
     """Create a default superadmin if no users exist (production safety net)."""
-    async with AsyncSessionLocal() as db:
-        try:
-            result = await db.execute(select(User))
-            if result.scalar_one_or_none():
-                return  # Users already exist, do nothing
-            
-            admin = User(
-                id=uuid.uuid4(),
-                email="admin@ojas.care",
-                hashed_password=get_password_hash("admin123"),
-                full_name="System Superadmin",
-                role="SUPER_ADMIN",
-                hospital_id=None,
-                is_active=True
-            )
-            db.add(admin)
-            await db.commit()
-            logging.info("✅ Default admin created: admin@ojas.care / admin123")
-        except Exception as e:
-            logging.error(f"Failed to create default admin: {e}")
-            await db.rollback()
+    from app.models.user import User
+    from app.core.security import get_password_hash
+    
+    result = await db.execute(select(User))
+    if result.scalar_one_or_none():
+        return  # Users already exist, do nothing
+    
+    admin = User(
+        id=uuid.uuid4(),
+        email="admin@ojas.care",
+        hashed_password=get_password_hash("admin123"),
+        full_name="System Superadmin",
+        role="SUPER_ADMIN",
+        hospital_id=None,
+        is_active=True
+    )
+    db.add(admin)
+    await db.commit()
+    logging.info("✅ Default admin created: admin@ojas.care / admin123")
 
 
 async def _seed_if_needed():
     """Run seed data in background after app startup - ONLY in non-production."""
     try:
         await asyncio.sleep(2)
-        # First create tables if they don't exist
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         
@@ -81,7 +72,6 @@ async def lifespan(app: FastAPI):
         inspector = inspect(sync_conn)
         return inspector.get_table_names()
 
-    # 1. Check existing tables
     tables = []
     try:
         async with engine.begin() as conn:
@@ -92,33 +82,30 @@ async def lifespan(app: FastAPI):
 
     tables_missing = 'users' not in tables
 
-    # 2. Create tables if missing (both prod and dev)
     if tables_missing:
         logging.info("Tables not found — creating schema...")
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-                # FIX: Re-check tables INSIDE the same connection block
                 tables = await conn.run_sync(check_tables)
             logging.info("Database schema created successfully")
         except Exception as e:
             logging.error(f"Failed to create tables: {e}")
             tables = []
 
-    # 3. If tables are still missing after creation, fail hard
     if 'users' not in tables:
         logging.error("Database tables missing after creation attempt!")
         raise RuntimeError("DB initialization failed — manual intervention required")
 
-    # 4. Auto-create admin if no users exist (works in both dev and prod)
-    await _ensure_admin_exists()
+    # NEW: Auto-create admin if no users exist (works in both dev and prod)
+    async with AsyncSessionLocal() as db:
+        await _ensure_admin_exists(db)
 
-    # 5. Seed ONLY in non-production environments
     if tables_missing and not _IS_PROD:
         logging.info("Seeding development database with initial data...")
         asyncio.create_task(_seed_if_needed())
     elif tables_missing and _IS_PROD:
-        logging.info("Production database ready.")
+        logging.info("Production database ready. Admin user ensured.")
 
     yield
     logging.info("Shutting down...")
@@ -138,113 +125,16 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin",
-                   "X-Requested-With", "X-Request-ID", "X-API-Key"],
-    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-API-Version"],
-    max_age=86400,
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
-
-# Compression middleware
-try:
-    from brotli_asgi import BrotliMiddleware
-    app.add_middleware(BrotliMiddleware, minimum_size=1000, quality=4)
-except ImportError:
-    pass
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-
-def cache_control(max_age=300):
-    """Add Cache-Control headers to API responses."""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            response = await func(*args, **kwargs)
-            if isinstance(response, JSONResponse):
-                response.headers["Cache-Control"] = f"public, max-age={max_age}"
-            return response
-        return wrapper
-    return decorator
-
-
-@app.middleware("http")
-async def add_request_metadata(request: Request, call_next):
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
-    request.state.request_id = request_id
-    start_time = time.time()
-
-    response = await call_next(request)
-    process_time = time.time() - start_time
-
-    response.headers["X-Request-ID"] = request_id
-    response.headers["X-Process-Time"] = str(round(process_time, 4))
-    response.headers["X-API-Version"] = "3.0.0"
-
-    if process_time > 0.5:
-        import logging
-        logging.warning(f"Slow request: {request.method} {request.url.path} took {process_time:.2f}s [{request_id}]")
-
-    return response
-
-
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    if request.url.scheme == "https":
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
-    
-    if _IS_PROD:
-        csp = (
-            "default-src 'self'; "
-            "script-src 'self'; "
-            "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data: https:; "
-            "font-src 'self'; "
-            "connect-src 'self' https://waba.360dialog.io; "
-            "frame-ancestors 'none'; "
-            "base-uri 'self'; "
-            "form-action 'self';"
-        )
-        response.headers["Content-Security-Policy"] = csp
-        response.headers["X-Content-Security-Policy"] = csp
-    
-    return response
-
-
-@app.exception_handler(SQLAlchemyError)
-async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
-    import logging
-    req_id = getattr(request.state, "request_id", None)
-    logging.error(f"Database error [{req_id}]: {exc}")
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Database error occurred", "request_id": req_id}
-    )
-
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    import logging
-    req_id = getattr(request.state, "request_id", None)
-    logging.error(f"Unhandled error [{req_id}]: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Internal server error", "request_id": req_id}
-    )
-
-
-# FIX: No prefix so routes match frontend
 app.include_router(auth.router)
 app.include_router(superadmin.router)
 app.include_router(hospitals.router)
@@ -252,41 +142,61 @@ app.include_router(patients.router)
 app.include_router(escalations.router)
 app.include_router(reports.router)
 app.include_router(whatsapp.router)
-app.include_router(contact.router)  # Contact form endpoint
-app.include_router(grievance_router)  # DPDPA grievance redressal
-
-
-@app.api_route("/", methods=["GET", "HEAD"])
-@cache_control(max_age=60)
-async def root():
-    return {
-        "name": "Ojas V3 API",
-        "version": "3.0.0",
-        "status": "running",
-        "environment": settings.ENVIRONMENT,
-        "docs": "/docs" if not _IS_PROD else None
-    }
+app.include_router(contact.router)
+app.include_router(grievance_router)
 
 
 @app.get("/health")
-@cache_control(max_age=10)
-async def health():
+async def health_check():
     db_healthy = False
-    last_error = None
-
-    for attempt in range(3):
-        try:
-            async with engine.begin() as conn:
-                result = await conn.execute(text("SELECT 1"))
-                db_healthy = result.scalar() == 1
-                break
-        except Exception as e:
-            last_error = str(e)
-            if attempt < 2:
-                await asyncio.sleep(0.5)
-
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+            db_healthy = True
+    except Exception as e:
+        logging.warning(f"Health check DB fail: {e}")
+    
     return {
         "status": "healthy" if db_healthy else "degraded",
+        "version": "3.0.0",
+        "environment": settings.ENVIRONMENT,
         "database": "connected" if db_healthy else "disconnected",
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
+
+
+@app.post("/admin/seed-demo-data")
+async def seed_demo_data():
+    """
+    Manually trigger seed data creation for demo purposes.
+    Only works if no patients exist (prevents duplicate data).
+    """
+    from app.models.patient import Patient
+    
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Patient))
+        if result.scalars().first():
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={"detail": "Demo data already exists. Database is not empty."}
+            )
+        
+        try:
+            from seed_data import seed
+            await seed(db)
+            return {
+                "message": " Demo data seeded successfully!",
+                "data": {
+                    "users": ["admin@ojas.care", "nurse@cityhospital.com", "dr.shikhar@cityhospital.com"],
+                    "hospital": "City Hospital",
+                    "patients": 32,
+                    "checkins": "~448 records (14 days × 32 patients)",
+                    "escalations": "Multiple (for demo)"
+                }
+            }
+        except Exception as e:
+            logging.error(f"Failed to seed demo data: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"detail": f"Seeding failed: {str(e)}"}
+            )
