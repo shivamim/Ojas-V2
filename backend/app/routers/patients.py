@@ -1,9 +1,10 @@
+import re
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date, timezone
 from typing import Optional
 
@@ -38,6 +39,15 @@ class PatientCreate(BaseModel):
     instructions: str = "Keep wound dry. Take prescribed medicines. Walk daily."
     consent_given: bool = Field(default=False)
     preferred_language: str = Field(default="en")
+
+    @field_validator('mobile', 'family_mobile')
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        """Validate Indian mobile number format: +91XXXXXXXXXX or XXXXXXXXXX"""
+        cleaned = v.replace('-', '').replace(' ', '').replace('+', '')
+        if not re.match(r'^91[6-9]\d{9}$|^[6-9]\d{9}$', cleaned):
+            raise ValueError('Invalid Indian mobile number format. Use +91XXXXXXXXXX or XXXXXXXXXX (10 digits starting with 6-9)')
+        return v
 
 
 class PatientUpdate(BaseModel):
@@ -132,8 +142,6 @@ async def create_patient(
         True
     )
     await db.commit()
-
-    return {"id": str(patient.id), "message": "Patient enrolled", "checkins_created": 14}
 
     return {"id": str(patient.id), "message": "Patient enrolled", "checkins_created": 14}
 

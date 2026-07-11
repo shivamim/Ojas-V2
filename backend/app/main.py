@@ -2,6 +2,7 @@ import os
 import time
 import uuid
 import asyncio
+import logging
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from functools import wraps
@@ -32,20 +33,18 @@ _IS_PROD = settings.ENVIRONMENT == "production"
 
 
 async def _seed_if_needed():
-    """Run seed data in background after app startup."""
+    """Run seed data in background after app startup - ONLY in non-production."""
     try:
         await asyncio.sleep(2)
         async with AsyncSessionLocal() as seed_db:
             from seed_data import seed
             await seed(seed_db)
     except Exception as e:
-        import logging
         logging.warning(f"Seed data error (background): {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    import logging
     logging.info(f"Starting Ojas V3 in {settings.ENVIRONMENT} mode")
 
     async with engine.begin() as conn:
@@ -64,10 +63,19 @@ async def lifespan(app: FastAPI):
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             logging.info("Tables created successfully")
+            # Update tables list after creation
+            tables = await conn.run_sync(check_tables)
         except Exception as e:
             logging.error(f"Failed to create tables: {e}")
+            tables = []
 
-    if 'users' not in tables:
+    # FIX: Only seed in non-production environments
+    if 'users' not in tables and _IS_PROD:
+        logging.error("Production database empty! Manual migration required.")
+        logging.error("Do NOT auto-seed production databases. Deploy failed or migration missing.")
+        raise RuntimeError("Production DB initialization failed - manual intervention required")
+    elif 'users' not in tables and not _IS_PROD:
+        logging.info("Seeding development database with initial data...")
         asyncio.create_task(_seed_if_needed())
 
     yield
