@@ -305,15 +305,15 @@
   
   /* Fade in animations */
   .fade-in {
-    @apply animate-in fade-in duration-500;
+    @apply animate-in duration-500;
   }
   
   .fade-in-up {
-    @apply animate-in fade-in slide-in-from-bottom-8 duration-500;
+    @apply animate-in slide-in-from-bottom-8 duration-500;
   }
   
   .fade-in-down {
-    @apply animate-in fade-in slide-in-from-top-8 duration-500;
+    @apply animate-in slide-in-from-top-8 duration-500;
   }
   
   /* Stagger animations for lists */
