@@ -839,6 +839,7 @@ export default function LandingPage() {
                 </div>
               </motion.div>
 
+              <motion.div {...fadeInUp}>
                 <AnimatePresence mode="wait">
                   {submitted ? (
                     <motion.div
