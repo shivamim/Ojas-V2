@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ import {
   Filter,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import api from '@/api/client'  // ← ADD THIS
 
 interface ReportRecord {
   id: string
@@ -22,6 +23,7 @@ interface ReportRecord {
   type: string
   status: 'completed' | 'processing' | 'failed'
   downloadUrl?: string
+  blobUrl?: string  // ← ADD THIS for actual PDF blob
 }
 
 const Reports = () => {
@@ -31,12 +33,13 @@ const Reports = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showPresets, setShowPresets] = useState(false)
+  const [latestPdfBlob, setLatestPdfBlob] = useState<Blob | null>(null)  // ← ADD THIS
+  const [latestPdfUrl, setLatestPdfUrl] = useState<string | null>(null)  // ← ADD THIS
 
-  // Mock report history — replace with API call
   const [history, setHistory] = useState<ReportRecord[]>([
-    { id: '1', date: '2024-07-01', type: 'NABH Compliance', status: 'completed', downloadUrl: '#' },
-    { id: '2', date: '2024-06-15', type: 'Patient Outcomes', status: 'completed', downloadUrl: '#' },
-    { id: '3', date: '2024-06-01', type: 'NABH Compliance', status: 'completed', downloadUrl: '#' },
+    { id: '1', date: '2024-07-01', type: 'NABH Compliance', status: 'completed' },
+    { id: '2', date: '2024-06-15', type: 'Patient Outcomes', status: 'completed' },
+    { id: '3', date: '2024-06-01', type: 'NABH Compliance', status: 'completed' },
   ])
 
   const presets = [
@@ -65,23 +68,68 @@ const Reports = () => {
     setShowPresets(false)
   }
 
-  const patientCount = 47 // Replace with actual API data
-  const followUpCount = 128 // Replace with actual API data
-
   const handleGenerate = async () => {
     if (!startDate || !endDate) {
       toast.error('Please select a date range')
       return
     }
     setIsGenerating(true)
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 2000))
-    setIsGenerating(false)
-    setShowSuccessModal(true)
-    setHistory((prev) => [
-      { id: Date.now().toString(), date: new Date().toISOString().split('T')[0], type: 'NABH Compliance', status: 'completed', downloadUrl: '#' },
-      ...prev,
-    ])
+    try {
+      // ← CALL ACTUAL BACKEND API
+      const response = await api.get('/reports/nabh', {
+        params: { start_date: startDate, end_date: endDate },
+        responseType: 'blob',  // Important: receive as blob
+      })
+
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+
+      setLatestPdfBlob(blob)
+      setLatestPdfUrl(url)
+
+      // Auto-download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `nabh_report_${startDate}_to_${endDate}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      setShowSuccessModal(true)
+      setHistory((prev) => [
+        {
+          id: Date.now().toString(),
+          date: new Date().toISOString().split('T')[0],
+          type: 'NABH Compliance',
+          status: 'completed',
+          blobUrl: url,
+        },
+        ...prev,
+      ])
+      toast.success('Report generated and downloaded!')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to generate report')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleDownloadLatest = () => {
+    if (latestPdfUrl) {
+      const link = document.createElement('a')
+      link.href = latestPdfUrl
+      link.download = `nabh_report_${startDate}_to_${endDate}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      toast.error('No report available. Generate one first.')
+    }
+  }
+
+  const handleEmailReport = () => {
+    toast.info('Email functionality coming soon!')
+    // TODO: Implement email sending via backend endpoint
   }
 
   return (
@@ -151,22 +199,6 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Preview */}
-        {startDate && endDate && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="bg-[hsl(var(--ojas-50))] rounded-xl p-4 border border-[hsl(var(--ojas-100))]"
-          >
-            <p className="text-sm text-[hsl(var(--ojas-800))]">
-              <strong>Report Preview:</strong> This report will include{' '}
-              <Badge variant="secondary" className="bg-white">{patientCount} patients</Badge> with{' '}
-              <Badge variant="secondary" className="bg-white">{followUpCount} follow-ups</Badge> completed between{' '}
-              <strong>{startDate}</strong> and <strong>{endDate}</strong>.
-            </p>
-          </motion.div>
-        )}
-
         {/* Generate Button */}
         <Button
           onClick={handleGenerate}
@@ -222,8 +254,20 @@ const Reports = () => {
                     </Badge>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    {report.downloadUrl && (
-                      <Button variant="ghost" size="sm" className="gap-1 text-[hsl(var(--ojas-600))]">
+                    {report.blobUrl && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1 text-[hsl(var(--ojas-600))]"
+                        onClick={() => {
+                          const link = document.createElement('a')
+                          link.href = report.blobUrl!
+                          link.download = `nabh_report_${report.date}.pdf`
+                          document.body.appendChild(link)
+                          link.click()
+                          document.body.removeChild(link)
+                        }}
+                      >
                         <Download size={14} />
                         Download
                       </Button>
@@ -258,19 +302,27 @@ const Reports = () => {
               </div>
               <h3 className="text-lg font-bold mb-2">Report Generated!</h3>
               <p className="text-sm text-slate-600 mb-6">Your NABH compliance report is ready.</p>
-              <div className="flex flex-col gap-2">
-                <Button className="w-full h-11 btn-primary gap-2">
-                  <Download size={16} />
-                  Download PDF
-                </Button>
-                <Button variant="outline" className="w-full h-11 gap-2">
-                  <Mail size={16} />
-                  Email Report
-                </Button>
-              </div>
+
+              <Button
+                onClick={handleDownloadLatest}
+                className="w-full h-11 bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))] text-white rounded-xl mb-3 gap-2"
+              >
+                <Download size={18} />
+                Download PDF
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleEmailReport}
+                className="w-full h-11 rounded-xl gap-2"
+              >
+                <Mail size={18} />
+                Email Report
+              </Button>
+
               <button
                 onClick={() => setShowSuccessModal(false)}
-                className="mt-4 text-sm text-slate-500 hover:text-slate-700"
+                className="mt-4 text-sm text-slate-400 hover:text-slate-600"
               >
                 Close
               </button>
@@ -282,7 +334,9 @@ const Reports = () => {
   )
 }
 
-// Need Label import
-import { Label } from '@/components/ui/label'
+// Simple Label component since it was missing in original
+const Label = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <label className={`block text-sm font-medium mb-1.5 ${className || ''}`}>{children}</label>
+)
 
 export default Reports
