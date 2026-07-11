@@ -8,6 +8,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Stethoscope, HeartPulse, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import api from '@/api/client'
 
 const Login = () => {
   const { login } = useAuth()
@@ -30,8 +31,14 @@ const Login = () => {
 
     setIsLoading(true)
     try {
-      await login({ email, password } as any)
+      // Call the backend API to authenticate
+      const { data } = await api.post('/auth/login', { email, password })
+      
+      // Pass the real response (with tokens and user) to AuthContext
+      await login(data)
+      
       toast.success('Welcome back!')
+      
       if (rememberMe) {
         localStorage.setItem('ojas_remember_email', email)
       } else {
