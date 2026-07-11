@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,15 +15,14 @@ import {
   Filter,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import api from '@/api/client'  // ← ADD THIS
+import api from '@/api/client'
 
 interface ReportRecord {
   id: string
   date: string
   type: string
   status: 'completed' | 'processing' | 'failed'
-  downloadUrl?: string
-  blobUrl?: string  // ← ADD THIS for actual PDF blob
+  blobUrl?: string
 }
 
 const Reports = () => {
@@ -33,8 +32,7 @@ const Reports = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showPresets, setShowPresets] = useState(false)
-  const [latestPdfBlob, setLatestPdfBlob] = useState<Blob | null>(null)  // ← ADD THIS
-  const [latestPdfUrl, setLatestPdfUrl] = useState<string | null>(null)  // ← ADD THIS
+  const [latestPdfUrl, setLatestPdfUrl] = useState<string | null>(null)
 
   const [history, setHistory] = useState<ReportRecord[]>([
     { id: '1', date: '2024-07-01', type: 'NABH Compliance', status: 'completed' },
@@ -75,19 +73,16 @@ const Reports = () => {
     }
     setIsGenerating(true)
     try {
-      // ← CALL ACTUAL BACKEND API
       const response = await api.get('/reports/nabh', {
         params: { start_date: startDate, end_date: endDate },
-        responseType: 'blob',  // Important: receive as blob
+        responseType: 'blob',
       })
 
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const url = window.URL.createObjectURL(blob)
 
-      setLatestPdfBlob(blob)
       setLatestPdfUrl(url)
 
-      // Auto-download
       const link = document.createElement('a')
       link.href = url
       link.download = `nabh_report_${startDate}_to_${endDate}.pdf`
@@ -129,7 +124,6 @@ const Reports = () => {
 
   const handleEmailReport = () => {
     toast.info('Email functionality coming soon!')
-    // TODO: Implement email sending via backend endpoint
   }
 
   return (
@@ -139,7 +133,6 @@ const Reports = () => {
         <p className="text-muted-foreground mt-0.5">Generate compliance and outcome reports</p>
       </div>
 
-      {/* Date Range Picker */}
       <div className="card-default space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           <div className="flex-1 w-full">
@@ -199,7 +192,6 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Generate Button */}
         <Button
           onClick={handleGenerate}
           disabled={isGenerating}
@@ -219,7 +211,6 @@ const Reports = () => {
         </Button>
       </div>
 
-      {/* Report History */}
       <div className="card-default">
         <h3 className="font-semibold mb-4 flex items-center gap-2">
           <Clock size={18} className="text-slate-400" />
@@ -280,7 +271,6 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Success Modal */}
       <AnimatePresence>
         {showSuccessModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -334,7 +324,6 @@ const Reports = () => {
   )
 }
 
-// Simple Label component since it was missing in original
 const Label = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <label className={`block text-sm font-medium mb-1.5 ${className || ''}`}>{children}</label>
 )
