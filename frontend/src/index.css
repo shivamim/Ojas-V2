@@ -130,9 +130,37 @@
 }
 
 @layer components {
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .alert-error {
+    @apply bg-[hsl(var(--error-50))] text-[hsl(var(--error-700))] border border-[hsl(var(--error-200))] rounded-xl p-4;
+  }
+
+  .badge-risk-critical {
+    @apply bg-[hsl(var(--error-50))] text-[hsl(var(--error-700))] border border-[hsl(var(--error-200))] font-medium;
+  }
+
+  .badge-risk-high {
+    @apply bg-[hsl(var(--warning-50))] text-[hsl(var(--warning-700))] border border-[hsl(var(--warning-200))] font-medium;
+  }
+
+  .badge-risk-medium {
+    @apply bg-[hsl(var(--ojas-50))] text-[hsl(var(--ojas-700))] border border-[hsl(var(--ojas-200))] font-medium;
+  }
+
+  .badge-risk-low {
+    @apply bg-[hsl(var(--success-50))] text-[hsl(var(--success-700))] border border-[hsl(var(--success-200))] font-medium;
+  }
+
   .card-default {
-    @apply bg-white rounded-2xl p-5 border border-slate-100 shadow-sm;
+    @apply bg-card rounded-2xl p-5 border border-border shadow-sm;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .dark .card-default {
+    @apply bg-card border-border;
   }
 
   .card-default:hover {
@@ -140,12 +168,16 @@
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
   }
 
+  .dark .card-default:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  }
+
   .skeleton {
-    @apply bg-slate-200 rounded-lg animate-pulse;
+    @apply bg-muted rounded-lg animate-pulse;
   }
 
   .shimmer {
-    @apply relative overflow-hidden bg-slate-200 rounded-xl;
+    @apply relative overflow-hidden bg-muted rounded-xl;
   }
 
   .shimmer::after {
@@ -153,6 +185,10 @@
     @apply absolute inset-0 -translate-x-full;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
     animation: shimmer 1.5s infinite linear;
+  }
+
+  .dark .shimmer::after {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
   }
 
   .btn-primary {
@@ -176,12 +212,20 @@
   }
 
   .form-input {
-    @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 transition-all duration-200 ease-out;
+    @apply w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground placeholder:text-muted-foreground transition-all duration-200 ease-out;
+  }
+
+  .dark .form-input {
+    @apply bg-card;
   }
 
   .form-input:focus {
-    @apply border-[hsl(var(--ojas-500))] bg-white;
+    @apply border-[hsl(var(--ojas-500))] bg-background;
     box-shadow: 0 0 0 3px hsl(var(--ojas-500) / 0.15);
+  }
+
+  .dark .form-input:focus {
+    @apply bg-card;
   }
 
   .form-input.error {
@@ -189,12 +233,16 @@
     animation: shake 0.4s ease-in-out;
   }
 
+  .dark .form-input.error {
+    @apply bg-red-900/20;
+  }
+
   .form-input.error:focus {
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
   }
 
   .form-label {
-    @apply block text-sm font-medium text-slate-700 mb-1.5;
+    @apply block text-sm font-medium text-foreground mb-1.5;
   }
 
   .form-error {

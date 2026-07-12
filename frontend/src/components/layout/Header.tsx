@@ -109,17 +109,17 @@ const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
   }
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md dark:bg-background/95">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
             <Menu size={20} />
           </Button>
           <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--ojas-600))] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-ojas-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm">O</span>
             </div>
-            <span className="font-bold text-lg hidden sm:inline">Ojas</span>
+            <span className="font-bold text-lg hidden sm:inline text-foreground">Ojas</span>
           </Link>
         </div>
 
@@ -128,9 +128,9 @@ const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setNotifOpen(!notifOpen)}
-              className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors"
+              className="relative p-2 rounded-xl hover:bg-accent transition-colors"
             >
-              <Bell size={20} className="text-slate-600" />
+              <Bell size={20} className="text-foreground" />
               {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {unreadCount}
@@ -155,24 +155,24 @@ const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden"
+                    className="absolute right-0 mt-2 w-80 sm:w-96 bg-card rounded-2xl shadow-2xl border border-border z-50 overflow-hidden dark:bg-card"
                   >
-                    <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                      <h3 className="font-semibold text-sm">Notifications</h3>
+                    <div className="flex items-center justify-between p-4 border-b border-border">
+                      <h3 className="font-semibold text-sm text-foreground">Notifications</h3>
                       <div className="flex items-center gap-1">
                         {unreadCount > 0 && (
-                          <button onClick={markAllRead} className="text-xs text-[hsl(var(--ojas-600))] hover:underline font-medium">
+                          <button onClick={markAllRead} className="text-xs text-ojas-600 hover:underline font-medium dark:text-ojas-400">
                             Mark all read
                           </button>
                         )}
-                        <button onClick={clearNotifications} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
-                          <X size={14} className="text-slate-400" />
+                        <button onClick={clearNotifications} className="p-1 hover:bg-accent rounded-lg transition-colors">
+                          <X size={14} className="text-muted-foreground" />
                         </button>
                       </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
                       {notifications.length === 0 ? (
-                        <div className="text-center py-8 text-slate-400">
+                        <div className="text-center py-8 text-muted-foreground">
                           <Bell size={32} className="mx-auto mb-2 opacity-40" />
                           <p className="text-sm">No notifications</p>
                         </div>
@@ -185,25 +185,25 @@ const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
                               navigate('/escalations')
                               setNotifOpen(false)
                             }}
-                            className={`w-full text-left p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors flex gap-3 ${n.read ? 'opacity-60' : ''}`}
+                            className={`w-full text-left p-3 border-b border-border/50 hover:bg-accent/50 transition-colors flex gap-3 ${n.read ? 'opacity-60' : ''}`}
                           >
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${getBg(n.type)}`}>
                               {getIcon(n.type)}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-slate-700 leading-snug">{n.message}</p>
-                              <p className="text-xs text-slate-400 mt-1">{formatTime(n.timestamp)}</p>
+                              <p className="text-sm text-foreground leading-snug">{n.message}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{formatTime(n.timestamp)}</p>
                             </div>
-                            {!n.read && <div className="w-2 h-2 bg-[hsl(var(--ojas-500))] rounded-full mt-2 shrink-0" />}
+                            {!n.read && <div className="w-2 h-2 bg-ojas-500 rounded-full mt-2 shrink-0" />}
                           </button>
                         ))
                       )}
                     </div>
-                    <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+                    <div className="p-3 border-t border-border bg-accent/30">
                       <Link
                         to="/escalations"
                         onClick={() => setNotifOpen(false)}
-                        className="block text-center text-xs text-[hsl(var(--ojas-600))] font-medium hover:underline"
+                        className="block text-center text-xs text-ojas-600 font-medium hover:underline dark:text-ojas-400"
                       >
                         View all escalations
                       </Link>
@@ -218,14 +218,14 @@ const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-accent transition-colors"
             >
-              <div className="w-8 h-8 rounded-full bg-[hsl(var(--ojas-100))] flex items-center justify-center text-xs font-bold text-[hsl(var(--ojas-700))]">
+              <div className="w-8 h-8 rounded-full bg-ojas-100 dark:bg-ojas-900/30 flex items-center justify-center text-xs font-bold text-ojas-700 dark:text-ojas-300">
                 {user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-sm font-medium leading-tight">{user?.full_name || 'User'}</p>
-                <p className="text-xs text-slate-500 leading-tight">{user?.role || 'Staff'}</p>
+                <p className="text-sm font-medium leading-tight text-foreground">{user?.full_name || 'User'}</p>
+                <p className="text-xs text-muted-foreground leading-tight">{user?.role || 'Staff'}</p>
               </div>
             </button>
 
@@ -236,32 +236,32 @@ const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden"
+                  className="absolute right-0 mt-2 w-56 bg-card rounded-2xl shadow-xl border border-border z-50 overflow-hidden"
                 >
-                  <div className="p-3 border-b border-slate-100">
-                    <p className="text-sm font-medium">{user?.full_name}</p>
-                    <p className="text-xs text-slate-500">{user?.email}</p>
+                  <div className="p-3 border-b border-border">
+                    <p className="text-sm font-medium text-foreground">{user?.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
                   </div>
                   <div className="p-2">
                     <button
                       onClick={() => { navigate('/settings'); setProfileOpen(false) }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
                     >
                       <Settings size={16} />
                       Settings
                     </button>
                     <button
                       onClick={() => { navigate('/profile'); setProfileOpen(false) }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
                     >
                       <User size={16} />
                       Profile
                     </button>
                   </div>
-                  <div className="p-2 border-t border-slate-100">
+                  <div className="p-2 border-t border-border">
                     <button
                       onClick={() => { logout(); setProfileOpen(false) }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <LogOut size={16} />
                       Sign out
