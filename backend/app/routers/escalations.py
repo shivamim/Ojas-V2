@@ -1,10 +1,10 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.tenant import require_tenant
@@ -27,7 +27,9 @@ async def list_escalations(
     request: Request, 
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(require_permission(Permission.PATIENT_READ)),
-    status: str = "OPEN"
+    status: str = "OPEN",
+    limit: int = 50,
+    offset: int = 0
 ):
     hospital_id = current_user.require_hospital()
 
@@ -37,8 +39,20 @@ async def list_escalations(
     if status:
         query = query.where(Escalation.status == status)
 
-    result = await db.execute(query.order_by(Escalation.created_at.desc()))
+    # Add pagination
+    query = query.order_by(Escalation.created_at.desc()).offset(offset).limit(limit)
+
+    result = await db.execute(query)
     escalations = result.scalars().all()
+    
+    # Get total count for pagination
+    count_query = select(func.count()).select_from(Escalation).join(Patient)
+    if hospital_id:
+        count_query = count_query.where(Patient.hospital_id == uuid.UUID(hospital_id))
+    if status:
+        count_query = count_query.where(Escalation.status == status)
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
 
     data = []
     for e in escalations:
@@ -55,7 +69,8 @@ async def list_escalations(
             "created_at": e.created_at.isoformat() if e.created_at else None,
             "suggestions": get_suggestions(e.trigger_type, decrypt_field(p.doctor_name) if p else "Doctor")
         })
-    return data
+    
+    return {"data": data, "total": total, "limit": limit, "offset": offset}
 
 
 @router.post("/{escalation_id}/resolve")
@@ -87,7 +102,7 @@ async def resolve_escalation(
 
     e.status = "RESOLVED"
     e.resolution_note = req.resolution_note
-    e.resolved_at = datetime.utcnow()
+    e.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
     e.resolved_by = uuid.UUID(current_user.user_id)
 
     open_count_result = await db.execute(

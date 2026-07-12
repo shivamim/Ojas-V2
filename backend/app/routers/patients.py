@@ -51,9 +51,9 @@ class PatientCreate(BaseModel):
 
 
 class PatientUpdate(BaseModel):
-    status: Optional[str] = None
+    status: Optional[str] = Field(None, pattern="^(ACTIVE|COMPLETED|ESCALATED|NO_REPLY)$")
     current_day: Optional[int] = Field(None, ge=1, le=14)
-    instructions: Optional[str] = None
+    instructions: Optional[str] = Field(None, max_length=500)
 
 
 class GrievanceCreate(BaseModel):
@@ -279,7 +279,7 @@ async def submit_checkin(
         raise HTTPException(404, "Checkin not found")
 
     checkin.status = "COMPLETED"
-    checkin.replied_at = datetime.utcnow()
+    checkin.replied_at = datetime.now(timezone.utc).replace(tzinfo=None)
     checkin.responses = responses or {}
     
     pain_val = responses.get("pain", "0") if responses else "0"

@@ -4,7 +4,7 @@ import hmac
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.tenant import require_tenant
@@ -156,7 +156,7 @@ async def handle_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 
                 # Update check-in
                 checkin.status = "COMPLETED"
-                checkin.replied_at = datetime.utcnow()
+                checkin.replied_at = datetime.now(timezone.utc).replace(tzinfo=None)
                 checkin.responses = responses
                 checkin.pain_level = pain_level
                 

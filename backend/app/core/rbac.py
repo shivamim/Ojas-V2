@@ -1,6 +1,11 @@
 from enum import Enum
 from fastapi import HTTPException, Request, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.core.security import decode_token
+from app.core.database import get_db
+from app.models.user import User
+import uuid
 
 class Permission(Enum):
     PATIENT_CREATE = "patient:create"
@@ -50,7 +55,7 @@ class CurrentUser:
         return self.hospital_id
 
 
-async def get_current_user(request: Request) -> CurrentUser:
+async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> CurrentUser:
     auth = request.headers.get("authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(
@@ -82,6 +87,30 @@ async def get_current_user(request: Request) -> CurrentUser:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Malformed token payload"
+        )
+    
+    # Verify user exists and is active in database
+    try:
+        uid = uuid.UUID(user_id)
+        result = await db.execute(select(User).where(User.id == uid))
+        db_user = result.scalar_one_or_none()
+        
+        if not db_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        
+        if not db_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is inactive or suspended"
+            )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID format"
         )
     
     user = CurrentUser(

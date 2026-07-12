@@ -2,8 +2,8 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from pydantic import BaseModel, EmailStr, Field, validator
-from datetime import datetime, timedelta
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from app.core.database import get_db
@@ -47,7 +47,8 @@ class InviteAcceptRequest(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100)
     password: str = Field(..., min_length=8, max_length=100)
 
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def password_strength(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -90,7 +91,7 @@ async def login(
     access = create_access_token(payload)
     refresh = create_refresh_token({"user_id": str(user.id), "jti": str(uuid.uuid4())})
 
-    now_naive = datetime.utcnow()
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
     expires_naive = now_naive + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
     rt = RefreshToken(
@@ -146,7 +147,7 @@ async def refresh_token(req: RefreshRequest, request: Request, db: AsyncSession 
     except ValueError:
         raise HTTPException(401, "Invalid user ID in token")
 
-    now_naive = datetime.utcnow()
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
 
     token_result = await db.execute(
         select(RefreshToken).where(
@@ -197,7 +198,7 @@ async def verify_invite(token: str, db: AsyncSession = Depends(get_db)):
     invite = result.scalar_one_or_none()
     if not invite or invite.used_at:
         raise HTTPException(400, "Invalid or used invite")
-    if invite.expires_at < datetime.utcnow():
+    if invite.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
         raise HTTPException(400, "Invite expired")
     return {"valid": True, "email": invite.email, "role": invite.role}
 
@@ -208,7 +209,7 @@ async def accept_invite(req: InviteAcceptRequest, db: AsyncSession = Depends(get
     invite = result.scalar_one_or_none()
     if not invite or invite.used_at:
         raise HTTPException(400, "Invalid or used invite")
-    if invite.expires_at < datetime.utcnow():
+    if invite.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
         raise HTTPException(400, "Invite expired")
 
     existing = await db.execute(select(User).where(User.email == invite.email))
@@ -224,7 +225,7 @@ async def accept_invite(req: InviteAcceptRequest, db: AsyncSession = Depends(get
         is_active=True
     )
     db.add(user)
-    invite.used_at = datetime.utcnow()
+    invite.used_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.commit()
     await db.refresh(user)
 
@@ -236,7 +237,7 @@ async def accept_invite(req: InviteAcceptRequest, db: AsyncSession = Depends(get
     }
     refresh = create_refresh_token({"user_id": str(user.id), "jti": str(uuid.uuid4())})
 
-    now_naive = datetime.utcnow()
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
     expires_naive = now_naive + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
     rt = RefreshToken(

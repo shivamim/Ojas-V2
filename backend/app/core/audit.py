@@ -48,7 +48,7 @@ async def log_audit(
             user_agent=user_agent,
             success=success,
             details=details or {},
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc).replace(tzinfo=None)
         )
         db.add(log)
         await db.commit()
