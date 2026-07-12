@@ -192,14 +192,30 @@ async def logout(request: Request, db: AsyncSession = Depends(get_db)):
     return {"message": "Logged out successfully"}
 
 
+class InviteVerifyRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+
+
 @router.post("/verify-invite")
-async def verify_invite(token: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(HospitalInvite).where(HospitalInvite.token == token))
+async def verify_invite(
+    req: InviteVerifyRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    # Apply rate limiting to prevent invite-token enumeration (H-6 security fix)
+    limiter = request.app.state.limiter
+    try:
+        limiter.limit("10/minute")(lambda: None)()
+    except RateLimitExceeded:
+        raise HTTPException(429, "Too many requests. Please try again later.")
+    
+    result = await db.execute(select(HospitalInvite).where(HospitalInvite.token == req.token))
     invite = result.scalar_one_or_none()
+    # Return identical generic response for invalid/used/expired tokens to prevent enumeration
     if not invite or invite.used_at:
         raise HTTPException(400, "Invalid or used invite")
     if invite.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
-        raise HTTPException(400, "Invite expired")
+        raise HTTPException(400, "Invalid or used invite")
     return {"valid": True, "email": invite.email, "role": invite.role}
 
 

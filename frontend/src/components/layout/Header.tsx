@@ -27,8 +27,8 @@ const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
   // Build notifications from real escalations data
   const escalationNotifs: NotificationItem[] = (escalationsData || []).slice(0, 5).map((e: any) => ({
     id: e.id,
-    type: e.priority === 'HIGH' || e.priority === 'CRITICAL' ? 'critical' : 'warning',
-    message: `Escalation: ${e.patient_name || 'Patient'} — ${e.reason || 'Needs attention'}`,
+    type: e.level === 'CRITICAL' || e.level === 'HIGH' ? 'critical' : 'warning',
+    message: `Escalation: ${e.patient_name || 'Patient'} — ${e.trigger_detail || e.description || 'Needs attention'}`,
     timestamp: e.created_at,
     read: false,
   }))
