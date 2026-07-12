@@ -4,7 +4,8 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import Literal
 from datetime import datetime, timezone, timedelta
 
 from app.core.database import get_db, engine, Base
@@ -31,7 +32,7 @@ class HospitalCreate(BaseModel):
 
 class InviteCreate(BaseModel):
     email: EmailStr
-    role: str = "HOSPITAL_ADMIN"
+    role: Literal["HOSPITAL_ADMIN", "COORDINATOR", "DOCTOR"] = "HOSPITAL_ADMIN"
 
 
 @router.post("/hospitals")

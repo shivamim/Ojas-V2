@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Float, Text, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Float, Text, Boolean, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -36,6 +36,14 @@ class Patient(Base):
     consent_version = Column(String, nullable=True)
     preferred_language = Column(String, default="en")
     erasure_requested_at = Column(DateTime, nullable=True)
+    
+    # Indexed lookup hash for WhatsApp webhook matching (avoids mass decryption)
+    mobile_lookup_hash = Column(String, index=True)
+    
+    # Index for efficient webhook lookups
+    __table_args__ = (
+        Index('ix_patients_mobile_lookup_hash', 'mobile_lookup_hash'),
+    )
 
     hospital = relationship("Hospital", back_populates="patients")
     checkins = relationship("CheckIn", back_populates="patient", cascade="all, delete")

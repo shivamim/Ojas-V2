@@ -25,27 +25,8 @@ MANIFEST
 # Virtual environments
 venv/
 ENV/
-.env
-.env.*
+env.bak/
 .venv/
-
-# Dependencies
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
 
 # IDE
 .vscode/
@@ -53,20 +34,32 @@ coverage.xml
 *.swp
 *.swo
 
-# OS
-.DS_Store
-Thumbs.db
+# Environment
+.env
+.env.local
+.env.*
 
 # Logs
 *.log
 
-# Environment
-.env
-.env.local
-*.env.*
+# Coverage
+.coverage
+coverage/
+htmlcov/
+.coverage.*
 
-# Build artifacts
-target/
+# Alembic
+alembic/
+
+# MyPy
 .mypy_cache/
+.dmypy.json
+dmypy.json
+
+# PyTest
 .pytest_cache/
+
+# Temp files
+*.tmp
+*.temp
 ```
