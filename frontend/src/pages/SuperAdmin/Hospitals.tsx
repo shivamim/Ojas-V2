@@ -23,14 +23,13 @@ import { toast } from 'sonner'
 interface Hospital {
   id: string
   name: string
-  address: string
-  phone: string
-  email: string
-  admin_name: string
-  admin_email: string
-  is_active: boolean
+  city: string
+  state: string
+  bed_count: number
+  nabh_level: string
+  plan_type: string
+  patient_count: number
   created_at: string
-  patient_count?: number
 }
 
 const Hospitals = () => {
@@ -62,8 +61,41 @@ const Hospitals = () => {
 
   const filtered = (hospitals || []).filter((h) =>
     h.name.toLowerCase().includes(search.toLowerCase()) ||
-    h.admin_email.toLowerCase().includes(search.toLowerCase())
+    h.city.toLowerCase().includes(search.toLowerCase())
   )
+
+  const addHospitalMutation = useCreateHospital()
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingHospital, setEditingHospital] = useState<Hospital | null>(null)
+  const [newHospitalForm, setNewHospitalForm] = useState({
+    name: '',
+    city: '',
+    state: '',
+    bed_count: 100,
+    nabh_level: 'Entry Level',
+    contact_email: '',
+    contact_phone: '',
+  })
+
+  const handleAddHospital = async () => {
+    try {
+      await addHospitalMutation.mutateAsync(newHospitalForm)
+      toast.success('Hospital created successfully')
+      setAddDialogOpen(false)
+      setNewHospitalForm({
+        name: '',
+        city: '',
+        state: '',
+        bed_count: 100,
+        nabh_level: 'Entry Level',
+        contact_email: '',
+        contact_phone: '',
+      })
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to create hospital')
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -72,7 +104,7 @@ const Hospitals = () => {
           <h1 className="text-2xl font-bold tracking-tight">Hospitals</h1>
           <p className="text-muted-foreground mt-0.5">Manage all registered hospitals</p>
         </div>
-        <Button className="btn-primary gap-2">
+        <Button className="btn-primary gap-2" onClick={() => setAddDialogOpen(true)}>
           <Plus size={16} />
           Add Hospital
         </Button>
@@ -124,16 +156,16 @@ const Hospitals = () => {
                       </Badge>
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                      <span className="flex items-center gap-1"><MapPin size={12} /> {hospital.address}</span>
-                      <span className="flex items-center gap-1"><Phone size={12} /> {hospital.phone}</span>
-                      <span className="flex items-center gap-1"><Mail size={12} /> {hospital.email}</span>
+                      <span className="flex items-center gap-1"><MapPin size={12} /> {hospital.city}, {hospital.state}</span>
                       <span className="flex items-center gap-1"><Users size={12} /> {hospital.patient_count || 0} patients</span>
+                      <span className="flex items-center gap-1">NABH: {hospital.nabh_level}</span>
+                      <span className="flex items-center gap-1">Beds: {hospital.bed_count}</span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">Admin: {hospital.admin_name} ({hospital.admin_email})</p>
+                    <p className="text-xs text-slate-400 mt-1">Plan: {hospital.plan_type}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => { setEditingHospital(hospital); setEditDialogOpen(true) }}>Edit</Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -185,13 +217,15 @@ const Hospitals = () => {
                 <Button
                   className="flex-1 h-11 bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => deleteMutation.mutate(deleteModal.id)}
-                  disabled={deleteMutation.isPending}
+                  disabled={deleteMutation.isPending || deleteModal.patient_count > 0}
                 >
                   {deleteMutation.isPending ? (
                     <span className="flex items-center gap-2">
                       <Loader2 size={16} className="animate-spin" />
                       Removing...
                     </span>
+                  ) : deleteModal.patient_count > 0 ? (
+                    'Cannot Delete (Has Patients)'
                   ) : (
                     'Remove Hospital'
                   )}
@@ -199,6 +233,187 @@ const Hospitals = () => {
               </div>
               <button
                 onClick={() => setDeleteModal(null)}
+                className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X size={16} className="text-slate-400" />
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Hospital Dialog */}
+      <AnimatePresence>
+        {addDialogOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setAddDialogOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 z-10"
+            >
+              <h3 className="text-lg font-bold mb-4">Add Hospital</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label className="form-label">Hospital Name *</Label>
+                  <Input
+                    value={newHospitalForm.name}
+                    onChange={(e) => setNewHospitalForm({ ...newHospitalForm, name: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="form-label">City *</Label>
+                    <Input
+                      value={newHospitalForm.city}
+                      onChange={(e) => setNewHospitalForm({ ...newHospitalForm, city: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <Label className="form-label">State *</Label>
+                    <Input
+                      value={newHospitalForm.state}
+                      onChange={(e) => setNewHospitalForm({ ...newHospitalForm, state: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="form-label">Bed Count</Label>
+                    <Input
+                      type="number"
+                      value={newHospitalForm.bed_count}
+                      onChange={(e) => setNewHospitalForm({ ...newHospitalForm, bed_count: parseInt(e.target.value) || 100 })}
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <Label className="form-label">NABH Level</Label>
+                    <select
+                      value={newHospitalForm.nabh_level}
+                      onChange={(e) => setNewHospitalForm({ ...newHospitalForm, nabh_level: e.target.value })}
+                      className="form-input"
+                    >
+                      <option value="Entry Level">Entry Level</option>
+                      <option value="NABH">NABH</option>
+                      <option value="NABL">NABL</option>
+                      <option value="JCI">JCI</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="form-label">Contact Email *</Label>
+                    <Input
+                      type="email"
+                      value={newHospitalForm.contact_email}
+                      onChange={(e) => setNewHospitalForm({ ...newHospitalForm, contact_email: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <Label className="form-label">Contact Phone *</Label>
+                    <Input
+                      value={newHospitalForm.contact_phone}
+                      onChange={(e) => setNewHospitalForm({ ...newHospitalForm, contact_phone: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <Button variant="outline" className="flex-1 h-11" onClick={() => setAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 h-11 btn-primary"
+                  onClick={handleAddHospital}
+                  disabled={addHospitalMutation.isPending || !newHospitalForm.name || !newHospitalForm.city || !newHospitalForm.state}
+                >
+                  {addHospitalMutation.isPending ? 'Creating...' : 'Create Hospital'}
+                </Button>
+              </div>
+              <button
+                onClick={() => setAddDialogOpen(false)}
+                className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X size={16} className="text-slate-400" />
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Hospital Dialog */}
+      <AnimatePresence>
+        {editDialogOpen && editingHospital && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setEditDialogOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 z-10"
+            >
+              <h3 className="text-lg font-bold mb-4">Edit Hospital</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label className="form-label">Hospital Name</Label>
+                  <Input
+                    value={editingHospital.name}
+                    disabled
+                    className="form-input bg-muted"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="form-label">City</Label>
+                    <Input value={editingHospital.city} disabled className="form-input bg-muted" />
+                  </div>
+                  <div>
+                    <Label className="form-label">State</Label>
+                    <Input value={editingHospital.state} disabled className="form-input bg-muted" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="form-label">Bed Count</Label>
+                    <Input value={editingHospital.bed_count} disabled className="form-input bg-muted" />
+                  </div>
+                  <div>
+                    <Label className="form-label">NABH Level</Label>
+                    <Input value={editingHospital.nabh_level} disabled className="form-input bg-muted" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Contact superadmin to modify hospital details.
+                </p>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <Button variant="outline" className="flex-1 h-11" onClick={() => setEditDialogOpen(false)}>
+                  Close
+                </Button>
+              </div>
+              <button
+                onClick={() => setEditDialogOpen(false)}
                 className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 <X size={16} className="text-slate-400" />

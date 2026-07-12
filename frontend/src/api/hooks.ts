@@ -106,7 +106,7 @@ export const useEscalations = (status = 'OPEN') => {
     queryKey: ['escalations', status],
     queryFn: async () => {
       const { data } = await api.get(`/escalations?status=${status}`)
-      return data
+      return data.data || []
     },
   })
 }

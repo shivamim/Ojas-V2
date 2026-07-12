@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { useCreatePatient } from '@/api/hooks'
+import ConsentStep from '@/components/ConsentStep'
 import {
   User,
   Stethoscope,
@@ -19,6 +21,7 @@ import {
 } from 'lucide-react'
 
 const STEPS = [
+  { id: 0, label: 'Consent', icon: CheckCircle2 },
   { id: 1, label: 'Personal Info', icon: User },
   { id: 2, label: 'Medical Details', icon: Stethoscope },
   { id: 3, label: 'Discharge Info', icon: FileText },
@@ -29,8 +32,10 @@ const STORAGE_KEY = 'ojas_enrollment_draft'
 
 const Enrollment = () => {
   const navigate = useNavigate()
-  const [step, setStep] = useState(1)
+  const createPatient = useCreatePatient()
+  const [step, setStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [consentGiven, setConsentGiven] = useState(false)
   const [form, setForm] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
     return saved ? JSON.parse(saved) : {
@@ -49,6 +54,9 @@ const Enrollment = () => {
       followUpDays: '14',
       preferredLanguage: 'en',
       emergencyContact: '',
+      familyMobile: '',
+      doctorSpecialty: '',
+      bedNumber: '',
     }
   })
 
@@ -66,6 +74,12 @@ const Enrollment = () => {
 
   const validateStep = () => {
     switch (step) {
+      case 0:
+        if (!consentGiven) {
+          toast.error('You must provide consent to continue')
+          return false
+        }
+        return true
       case 1:
         if (!form.fullName || !form.phone || !form.uhid) {
           toast.error('Please fill in all required fields')
@@ -93,13 +107,26 @@ const Enrollment = () => {
     if (validateStep()) setStep((s) => Math.min(s + 1, 4))
   }
 
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1))
+  const prevStep = () => setStep((s) => Math.max(s - 1, 0))
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
-      // await api.post('/patients', form)
-      await new Promise((r) => setTimeout(r, 1500)) // Mock
+      await createPatient.mutateAsync({
+        full_name: form.fullName,
+        mobile: form.phone,
+        family_mobile: form.familyMobile,
+        age: parseInt(form.age) || 0,
+        surgery_type: form.surgeryType,
+        discharge_date: form.dischargeDate,
+        doctor_name: form.surgeonName,
+        doctor_specialty: form.doctorSpecialty || 'General',
+        bed_number: form.bedNumber || 'N/A',
+        uhid: form.uhid,
+        instructions: form.dischargeSummary,
+        consent_given: consentGiven,
+        preferred_language: form.preferredLanguage,
+      })
       toast.success('Patient enrolled successfully!')
       localStorage.removeItem(STORAGE_KEY)
       navigate('/patients')
@@ -110,7 +137,7 @@ const Enrollment = () => {
     }
   }
 
-  const progress = ((step - 1) / (STEPS.length - 1)) * 100
+  const progress = ((step) / (STEPS.length - 1)) * 100
 
   const Tooltip = ({ text }: { text: string }) => (
     <div className="group relative inline-flex ml-1">
@@ -175,6 +202,16 @@ const Enrollment = () => {
           transition={{ duration: 0.3 }}
           className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-5"
         >
+          {step === 0 && (
+            <ConsentStep
+              onConsentGiven={(consent) => {
+                setConsentGiven(consent)
+                if (consent) nextStep()
+              }}
+              dpoEmail="dpo@ojas.care"
+            />
+          )}
+
           {step === 1 && (
             <>
               <h2 className="text-lg font-semibold mb-4">Personal Information</h2>
@@ -365,7 +402,7 @@ const Enrollment = () => {
         <Button
           variant="outline"
           onClick={prevStep}
-          disabled={step === 1}
+          disabled={step === 0}
           className="h-11 px-6 gap-2"
         >
           <ChevronLeft size={16} />
