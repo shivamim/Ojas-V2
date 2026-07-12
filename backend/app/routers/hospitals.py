@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.core.database import get_db
@@ -15,12 +15,12 @@ router = APIRouter(prefix="/hospitals", tags=["Hospitals"])
 
 
 class HospitalUpdate(BaseModel):
-    name: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    bed_count: Optional[int] = None
-    nabh_level: Optional[str] = None
-    logo_url: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=2, max_length=200)
+    city: Optional[str] = Field(None, min_length=1, max_length=100)
+    state: Optional[str] = Field(None, min_length=1, max_length=100)
+    bed_count: Optional[int] = Field(None, ge=0, le=5000)
+    nabh_level: Optional[str] = Field(None, min_length=1, max_length=50)
+    logo_url: Optional[str] = Field(None, max_length=500)
     settings: Optional[dict] = None
 
 

@@ -51,18 +51,29 @@ const Dashboard = () => {
     { name: 'No Reply', value: noReplyPatients, color: 'hsl(38 92% 50%)' },
   ]
 
-  const todayCheckins = patients.filter((p: { current_day?: number }) => p.current_day && p.current_day <= 14).length
+  const todayCheckins = patients.filter((p: { current_day?: number; status?: string }) => {
+    // Count patients who are active and due for check-in today (within their 14-day window)
+    return p.status === 'ACTIVE' && p.current_day && p.current_day <= 14
+  }).length
   const pendingCheckins = patients.filter((p: { status?: string }) => p.status ? ['ACTIVE', 'ESCALATED'].includes(p.status) : false).length
   const highRiskPatients = patients.filter((p: { risk_level?: string }) => p.risk_level ? ['HIGH', 'CRITICAL'].includes(p.risk_level) : false)
   
-  const recoveryTrend = [
-    { day: 'Day 1', completed: 7, pending: 0, missed: 0 },
-    { day: 'Day 3', completed: 7, pending: 0, missed: 0 },
-    { day: 'Day 5', completed: 6, pending: 0, missed: 1 },
-    { day: 'Day 7', completed: 5, pending: 0, missed: 2 },
-    { day: 'Day 10', completed: 4, pending: 1, missed: 2 },
-    { day: 'Day 14', completed: 3, pending: 2, missed: 2 },
-  ]
+  const recoveryTrend = patients.length > 0 
+    ? [
+        { day: 'Day 1-3', completed: patients.filter((p: { current_day?: number }) => (p.current_day || 0) <= 3).length, pending: 0, missed: 0 },
+        { day: 'Day 4-6', completed: patients.filter((p: { current_day?: number }) => (p.current_day || 0) > 3 && (p.current_day || 0) <= 6).length, pending: 0, missed: 0 },
+        { day: 'Day 7-9', completed: patients.filter((p: { current_day?: number }) => (p.current_day || 0) > 6 && (p.current_day || 0) <= 9).length, pending: 0, missed: 0 },
+        { day: 'Day 10-12', completed: patients.filter((p: { current_day?: number }) => (p.current_day || 0) > 9 && (p.current_day || 0) <= 12).length, pending: 0, missed: 0 },
+        { day: 'Day 13-14', completed: patients.filter((p: { current_day?: number }) => (p.current_day || 0) > 12).length, pending: 0, missed: 0 },
+      ]
+    : [
+        { day: 'Day 1', completed: 0, pending: 0, missed: 0 },
+        { day: 'Day 3', completed: 0, pending: 0, missed: 0 },
+        { day: 'Day 5', completed: 0, pending: 0, missed: 0 },
+        { day: 'Day 7', completed: 0, pending: 0, missed: 0 },
+        { day: 'Day 10', completed: 0, pending: 0, missed: 0 },
+        { day: 'Day 14', completed: 0, pending: 0, missed: 0 },
+      ]
 
   const recentPatients = [...patients]
     .sort((a: { discharge_date?: string }, b: { discharge_date?: string }) => {

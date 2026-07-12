@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from datetime import datetime, date
+from datetime import datetime, timezone, date
 
 from app.core.database import get_db
 from app.core.tenant import require_tenant
@@ -76,8 +76,8 @@ async def generate_nabh_report_endpoint(
     }
 
     # Parse and validate dates
-    parsed_start = datetime.utcnow().strftime("%Y-%m-%d")
-    parsed_end = datetime.utcnow().strftime("%Y-%m-%d")
+    parsed_start = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%d")
+    parsed_end = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%d")
 
     if start_date:
         try:

@@ -106,27 +106,25 @@ def cache_result(ttl_seconds: int = 60):
     return decorator
 
 
-def invalidate_cache(pattern: Optional[str] = None) -> int:
-    """Invalidate cache entries matching a pattern."""
+async def invalidate_cache(pattern: Optional[str] = None) -> int:
+    """Invalidate cache entries matching a pattern. Async version."""
     count = 0
     client = get_redis_client()
     
     if client and pattern:
         try:
-            loop = asyncio.get_event_loop()
-            keys = loop.run_until_complete(client.keys(f"*{pattern}*"))
+            keys = await client.keys(f"*{pattern}*")
             if keys:
                 count = len(keys)
-                loop.run_until_complete(client.delete(*keys))
+                await client.delete(*keys)
         except Exception:
             pass
     elif client:
         try:
-            loop = asyncio.get_event_loop()
-            keys = loop.run_until_complete(client.keys("*"))
+            keys = await client.keys("*")
             if keys:
                 count = len(keys)
-                loop.run_until_complete(client.delete(*keys))
+                await client.delete(*keys)
         except Exception:
             pass
     
@@ -144,7 +142,7 @@ def invalidate_cache(pattern: Optional[str] = None) -> int:
     return count
 
 
-def get_cache_stats() -> dict:
+async def get_cache_stats() -> dict:
     """Get cache statistics for monitoring"""
     stats = {
         "backend": "redis" if get_redis_client() else "memory",
@@ -156,8 +154,7 @@ def get_cache_stats() -> dict:
     client = get_redis_client()
     if client:
         try:
-            loop = asyncio.get_event_loop()
-            db_size = loop.run_until_complete(client.dbsize())
+            db_size = await client.dbsize()
             stats["total_keys"] = db_size
             stats["active_keys"] = db_size
         except Exception:
