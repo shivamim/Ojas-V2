@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./ojas.db")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY", "")
-    ENCRYPTION_SALT: str = os.getenv("ENCRYPTION_SALT", "ojas-salt-2026")
+    ENCRYPTION_SALT: str = os.getenv("ENCRYPTION_SALT", "")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
@@ -50,6 +50,13 @@ class Settings(BaseSettings):
                 sys.exit(1)
             self.ENCRYPTION_KEY = secrets.token_hex(16)
             logger.warning("Auto-generated ENCRYPTION_KEY (development only)")
+        
+        if not self.ENCRYPTION_SALT:
+            if _IS_PROD:
+                logger.critical("FATAL: ENCRYPTION_SALT required in production")
+                sys.exit(1)
+            self.ENCRYPTION_SALT = secrets.token_urlsafe(16)
+            logger.warning("Auto-generated ENCRYPTION_SALT (development only)")
 
     @property
     def cors_origins(self) -> List[str]:

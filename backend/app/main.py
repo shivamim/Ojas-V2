@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from functools import wraps
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -19,6 +19,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.config import settings
+from app.core.rbac import Permission, require_permission, get_current_user, CurrentUser
 from app.routers import auth, superadmin, hospitals, patients, escalations, reports, whatsapp, contact
 
 import app.models
@@ -166,10 +167,13 @@ async def health_check():
 
 
 @app.post("/admin/seed-demo-data")
-async def seed_demo_data():
+async def seed_demo_data(
+    current_user: CurrentUser = Depends(require_permission(Permission.HOSPITAL_MANAGE))
+):
     """
     Manually trigger seed data creation for demo purposes.
     Only works if no patients exist (prevents duplicate data).
+    Requires HOSPITAL_MANAGE or higher permission (admin only).
     """
     from app.models.patient import Patient
     
