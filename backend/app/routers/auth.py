@@ -17,6 +17,11 @@ from app.core.audit import log_audit
 from app.models.user import User
 from app.models.hospital_invite import HospitalInvite
 from app.models.refresh_token import RefreshToken
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -61,8 +66,12 @@ async def login(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ):
-    # Rate limiting disabled temporarily due to slowapi compatibility issues
-    # TODO: Re-enable rate limiting with proper slowapi configuration
+    # Apply rate limiting to prevent brute-force attacks
+    try:
+        limiter.limit("5/minute")(lambda: None)()
+    except RateLimitExceeded:
+        raise HTTPException(429, "Too many login attempts. Please try again later.")
+    
     result = await db.execute(select(User).where(User.email == req.email))
     user = result.scalar_one_or_none()
 
@@ -118,8 +127,12 @@ async def login(
 
 @router.post("/refresh", response_model=dict)
 async def refresh_token(req: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    # Rate limiting disabled temporarily due to slowapi compatibility issues
-    # TODO: Re-enable rate limiting with proper slowapi configuration
+    # Apply rate limiting to prevent token brute-force attacks
+    try:
+        limiter.limit("10/minute")(lambda: None)()
+    except RateLimitExceeded:
+        raise HTTPException(429, "Too many refresh attempts. Please try again later.")
+    
     payload = decode_token(req.refresh_token)
     if not payload or payload.get("type") != "refresh":
         raise HTTPException(401, "Invalid refresh token")

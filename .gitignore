@@ -20,12 +20,28 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Database
-ojas_dev.db
+MANIFEST
 
 # Environment
 .env
 .env.local
 .env.*
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Logs
+*.log
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
 ```
