@@ -13,6 +13,7 @@ from app.core.tenant import require_tenant
 from app.core.encryption import encrypt_field, decrypt_field
 from app.core.rbac import Permission, require_permission, get_current_user, CurrentUser
 from app.core.audit import log_audit
+from app.core.config import settings
 from app.models.patient import Patient, Grievance
 from app.models.checkin import CheckIn
 from app.models.escalation import Escalation
@@ -567,7 +568,7 @@ async def create_grievance(
     # Send notification to DPO
     try:
         await send_email(
-            to="dpo@ojas.care",
+            to=settings.DPO_EMAIL,
             subject=f"New Patient Grievance - {grievance.id}",
             body=f"""
             New grievance received:

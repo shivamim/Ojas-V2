@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
@@ -16,5 +16,5 @@ class AuditLog(Base):
     details = Column(JSON, default=dict)
     ip_address = Column(String, nullable=True)
     user_agent = Column(String, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     success = Column(Boolean, default=True)
