@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 class CheckIn(Base):
     __tablename__ = "checkins"
@@ -19,6 +19,6 @@ class CheckIn(Base):
     risk_score = Column(Integer, default=0)
     risk_level = Column(String, default="LOW")
     risk_reasons = Column(JSON, default=list)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     patient = relationship("Patient", back_populates="checkins")

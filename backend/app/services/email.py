@@ -180,14 +180,17 @@ async def send_breach_alert_email(admin_email: str, details: str) -> dict:
             "email": admin_email
         }
     
+    import html
+    escaped_details = html.escape(details)
+    
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #dc2626;\">Security Alert</h2>
+        <h2 style="color: #dc2626;">Security Alert</h2>
         <p>A potential security breach has been detected:</p>
         <div style="background: #fef2f2; padding: 15px; border-left: 4px solid #dc2626; margin: 20px 0;">
-            <pre style="margin: 0; white-space: pre-wrap;">{details}</pre>
+            <pre style="margin: 0; white-space: pre-wrap;">{escaped_details}</pre>
         </div>
         <p>Please investigate immediately.</p>
     </body>

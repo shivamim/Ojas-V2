@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Float, Tex
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Patient(Base):
     __tablename__ = "patients"
@@ -28,7 +28,7 @@ class Patient(Base):
     risk_score = Column(Integer, default=0)
     risk_level = Column(String, default="LOW")
     readmission_risk = Column(String, default="LOW")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # DPDPA 2023 Compliance Fields
     consent_given = Column(Boolean, default=False)
@@ -53,5 +53,5 @@ class Grievance(Base):
     status = Column(String, default="OPEN")  # OPEN, IN_PROGRESS, RESOLVED
     resolved_at = Column(DateTime, nullable=True)
     resolution_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
