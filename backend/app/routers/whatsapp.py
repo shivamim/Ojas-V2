@@ -1,6 +1,7 @@
 import uuid
 import hashlib
 import hmac
+import json
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -19,6 +20,34 @@ from app.services.whatsapp import send_whatsapp_message, send_template_message
 from app.services.ai_scoring import calculate_risk_score
 
 router = APIRouter(prefix="/whatsapp", tags=["WhatsApp"])
+
+
+def verify_whatsapp_signature(raw_body: bytes, signature_header: str) -> bool:
+    """
+    Verify the HMAC-SHA256 signature of a WhatsApp webhook request.
+    
+    Args:
+        raw_body: The raw request body bytes
+        signature_header: The X-Hub-Signature-256 header value (format: "sha256=<hex>")
+    
+    Returns:
+        True if signature is valid, False otherwise
+    """
+    if not settings.WHATSAPP_APP_SECRET:
+        # If no secret configured, skip verification (development mode)
+        return True
+    
+    if not signature_header or not signature_header.startswith("sha256="):
+        return False
+    
+    expected_signature = signature_header.replace("sha256=", "")
+    computed_signature = hmac.new(
+        settings.WHATSAPP_APP_SECRET.encode('utf-8'),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(expected_signature, computed_signature)
 
 
 @router.get("/webhook")
@@ -41,14 +70,25 @@ async def verify_webhook(request: Request):
 async def handle_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Handle inbound WhatsApp messages from patients.
-    - Matches sender phone to Patient.mobile (via HMAC lookup hash)
+    - Verifies HMAC-SHA256 signature for security
+    - Matches sender phone to Patient.mobile_lookup_hash (indexed lookup)
     - Finds earliest PENDING check-in
     - Parses response and updates check-in
     - Triggers AI scoring and escalation if needed
     - Handles HELP/SOS keywords for immediate critical escalation
     """
+    # Security: Verify webhook signature before processing
+    raw_body = await request.body()
+    signature_header = request.headers.get("X-Hub-Signature-256", "")
+    
+    if not verify_whatsapp_signature(raw_body, signature_header):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid or missing webhook signature"
+        )
+    
     try:
-        payload = await request.json()
+        payload = json.loads(raw_body)
     except Exception:
         return {"status": "ok"}  # Never error back to Meta
     
@@ -76,22 +116,15 @@ async def handle_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 if not from_number or not message_text:
                     continue
                 
-                # Match patient by phone number
-                # Since mobile is encrypted, we need to decrypt-and-compare
-                # In production, add a deterministic mobile_lookup_hash column
-                result = await db.execute(select(Patient))
-                all_patients = result.scalars().all()
+                # Match patient by phone number using indexed mobile_lookup_hash
+                # This is O(1) instead of O(n) - no more mass decryption
+                from app.core.encryption import get_mobile_lookup_hash
+                lookup_hash = get_mobile_lookup_hash(from_number)
                 
-                matched_patient = None
-                for p in all_patients:
-                    try:
-                        decrypted_mobile = decrypt_field(p.mobile)
-                        if decrypted_mobile and (decrypted_mobile == from_number or 
-                           decrypted_mobile.replace("+91", "") == from_number.replace("+91", "")):
-                            matched_patient = p
-                            break
-                    except Exception:
-                        continue
+                result = await db.execute(
+                    select(Patient).where(Patient.mobile_lookup_hash == lookup_hash).limit(1)
+                )
+                matched_patient = result.scalar_one_or_none()
                 
                 if not matched_patient:
                     print(f"[WEBHOOK] No patient found for {from_number}")

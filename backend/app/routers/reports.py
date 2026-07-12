@@ -69,10 +69,11 @@ async def generate_nabh_report_endpoint(
     stats = {
         "follow_up_rate": round((completed / total * 100), 1) if total > 0 else 0,
         "follow_ups": completed,
-        "early_follow_up_rate": round(min(92.0, (completed / total * 100 * 0.95)) if total > 0 else 0, 1),
-        "early_follow_ups": min(int(completed * 0.92), completed),
-        "feedback_rate": round(min(78.0, (total * 0.78) / total * 100) if total > 0 else 0, 1),
-        "feedback_count": min(int(total * 0.78), total)
+        "early_follow_up_rate": round((completed / total * 100) if total > 0 else 0, 1),
+        "early_follow_ups": completed,
+        # feedback_rate and feedback_count removed - not yet available
+        # TODO: Implement patient feedback collection mechanism to compute real feedback metrics
+        # See: https://github.com/ojas-health/ojas-v2/issues/XXX for tracking
     }
 
     # Parse and validate dates

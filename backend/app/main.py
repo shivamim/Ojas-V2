@@ -25,17 +25,23 @@ from app.routers import auth, superadmin, hospitals, patients, escalations, repo
 import app.models
 from app.routers.patients import grievance_router
 
+# Import limiter for use in routers - single instance stored on app.state
 limiter = Limiter(key_func=get_remote_address)
 _IS_PROD = settings.ENVIRONMENT == "production"
 
 
 async def _ensure_admin_exists(db):
-    """Create a default superadmin if no users exist (production safety net)."""
+    """Create a default superadmin if no users exist (production safety net).
+    
+    DEPRECATED: This function is no longer used in the app startup path.
+    Admin users should be created via the CLI script: scripts/create_admin.py
+    This function remains only for reference and potential future use.
+    """
     from app.models.user import User
     from app.core.security import get_password_hash
     
     result = await db.execute(select(User))
-    if result.scalars().first():  # ← FIX: was scalar_one_or_none() — crashes with multiple users
+    if result.scalars().first():
         return  # Users already exist, do nothing
     
     admin = User(
@@ -49,7 +55,7 @@ async def _ensure_admin_exists(db):
     )
     db.add(admin)
     await db.commit()
-    logging.info("✅ Default admin created: admin@ojas.care / admin123")
+    # NOTE: Password logging removed for security - use create_admin.py script instead
 
 
 async def _seed_if_needed():
@@ -98,15 +104,12 @@ async def lifespan(app: FastAPI):
         logging.error("Database tables missing after creation attempt!")
         raise RuntimeError("DB initialization failed — manual intervention required")
 
-    # Auto-create admin if no users exist (works in both dev and prod)
-    async with AsyncSessionLocal() as db:
-        await _ensure_admin_exists(db)
-
+    # Seed data only in non-production when tables were just created
     if tables_missing and not _IS_PROD:
         logging.info("Seeding development database with initial data...")
         asyncio.create_task(_seed_if_needed())
     elif tables_missing and _IS_PROD:
-        logging.info("Production database ready. Admin user ensured.")
+        logging.info("Production database ready.")
 
     yield
     logging.info("Shutting down...")
@@ -168,13 +171,21 @@ async def health_check():
 
 @app.post("/admin/seed-demo-data")
 async def seed_demo_data(
-    current_user: CurrentUser = Depends(require_permission(Permission.HOSPITAL_MANAGE))
+    current_user: CurrentUser = Depends(require_superadmin)
 ):
     """
     Manually trigger seed data creation for demo purposes.
     Only works if no patients exist (prevents duplicate data).
-    Requires HOSPITAL_MANAGE or higher permission (admin only).
+    Requires SUPERADMIN permission only.
+    Disabled in production environment.
     """
+    # Security: Disable this endpoint entirely in production
+    if settings.ENVIRONMENT == "production":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="This endpoint is disabled in production"
+        )
+    
     from app.models.patient import Patient
     
     async with AsyncSessionLocal() as db:
@@ -202,5 +213,5 @@ async def seed_demo_data(
             logging.error(f"Failed to seed demo data: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={"detail": f"Seeding failed: {str(e)}"}
+                content={"detail": "Seeding failed. Check server logs for details."}
             )

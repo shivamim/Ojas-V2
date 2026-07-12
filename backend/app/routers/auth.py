@@ -17,11 +17,9 @@ from app.core.audit import log_audit
 from app.models.user import User
 from app.models.hospital_invite import HospitalInvite
 from app.models.refresh_token import RefreshToken
-from slowapi import Limiter
+from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-
-limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -68,6 +66,7 @@ async def login(
     db: AsyncSession = Depends(get_db)
 ):
     # Apply rate limiting to prevent brute-force attacks
+    limiter = request.app.state.limiter
     try:
         limiter.limit("5/minute")(lambda: None)()
     except RateLimitExceeded:
@@ -129,6 +128,7 @@ async def login(
 @router.post("/refresh", response_model=dict)
 async def refresh_token(req: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db)):
     # Apply rate limiting to prevent token brute-force attacks
+    limiter = request.app.state.limiter
     try:
         limiter.limit("10/minute")(lambda: None)()
     except RateLimitExceeded:
