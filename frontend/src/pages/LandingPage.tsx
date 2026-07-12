@@ -282,11 +282,11 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-white/95 backdrop-blur-md border-b shadow-sm' : 'bg-transparent'
+          scrolled ? 'bg-background/95 backdrop-blur-md border-b shadow-sm' : 'bg-transparent'
         }`}
       >
         <div className="section-container">
@@ -341,7 +341,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden bg-white border-b shadow-lg overflow-hidden"
+              className="lg:hidden bg-background border-b shadow-lg overflow-hidden"
             >
               <div className="section-container py-4 space-y-2">
                 {navLinks.map((link) => (
@@ -513,7 +513,7 @@ export default function LandingPage() {
               transition={{ duration: 0.6 }}
               className="relative"
             >
-              <div className="bg-white rounded-2xl border border-border shadow-lg p-6 space-y-5">
+              <div className="bg-card rounded-2xl border border-border shadow-lg p-6 space-y-5">
                 <div className="flex items-center justify-between pb-4 border-b">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[hsl(var(--ojas-100))] rounded-lg flex items-center justify-center">
@@ -705,7 +705,7 @@ export default function LandingPage() {
                 className={`rounded-2xl p-6 transition-all duration-300 ${
                   plan.highlighted
                     ? 'bg-[hsl(var(--ojas-700))] text-white shadow-xl shadow-[hsl(var(--ojas-700)/0.2)] scale-105'
-                    : 'bg-white border border-border'
+                    : 'bg-card border border-border'
                 }`}
               >
                 <p className="text-sm font-medium mb-2">{plan.name}</p>
@@ -729,7 +729,7 @@ export default function LandingPage() {
                 <Button
                   className={`w-full h-11 transition-all duration-200 active:scale-[0.98] ${
                     plan.highlighted
-                      ? 'bg-white text-[hsl(var(--ojas-700))] hover:bg-[hsl(var(--ojas-50))]'
+                      ? 'bg-white text-[hsl(var(--ojas-700))] hover:bg-[hsl(var(--ojas-50))] dark:hover:bg-[hsl(var(--ojas-100))]'
                       : 'bg-[hsl(var(--ojas-600))] hover:bg-[hsl(var(--ojas-700))] text-white'
                   }`}
                   asChild

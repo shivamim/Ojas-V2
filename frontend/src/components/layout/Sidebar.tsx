@@ -43,8 +43,8 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         onClick={onClose}
         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative group ${
           active
-            ? 'bg-[hsl(var(--ojas-50))] text-[hsl(var(--ojas-700))] font-medium'
-            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            ? 'bg-[hsl(var(--ojas-50))] text-[hsl(var(--ojas-700))] font-medium dark:bg-[hsl(var(--ojas-900))] dark:text-[hsl(var(--ojas-100))]'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         }`}
       >
         {active && (
@@ -54,7 +54,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           />
         )}
-        <Icon size={20} className={active ? 'text-[hsl(var(--ojas-600))]' : 'text-slate-400 group-hover:text-slate-600'} />
+        <Icon size={20} className={active ? 'text-[hsl(var(--ojas-600))] dark:text-[hsl(var(--ojas-400))]' : 'text-muted-foreground group-hover:text-foreground'} />
         {!collapsed && <span className="text-sm">{label}</span>}
       </Link>
     )
@@ -77,12 +77,12 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
       {/* Sidebar */}
       <motion.aside
-        className={`fixed top-0 left-0 z-50 h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-screen bg-card border-r border-border flex flex-col transition-all duration-300 ${
           collapsed ? 'w-20' : 'w-64'
         } ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           <Link to="/dashboard" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[hsl(var(--ojas-600))] flex items-center justify-center shrink-0">
               <span className="text-white font-bold text-sm">O</span>
@@ -110,8 +110,8 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
           {user?.role === 'SUPER_ADMIN' && (
             <>
-              {!collapsed && <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mt-4">Super Admin</div>}
-              {collapsed && <div className="my-4 border-t border-slate-100" />}
+              {!collapsed && <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-4">Super Admin</div>}
+              {collapsed && <div className="my-4 border-t border-border" />}
               {superAdminItems.map((item) => (
                 <NavLink key={item.to} {...item} />
               ))}
@@ -121,14 +121,14 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
         {/* User Mini Profile */}
         {!collapsed && (
-          <div className="p-4 border-t border-slate-100">
+          <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[hsl(var(--ojas-100))] flex items-center justify-center text-xs font-bold text-[hsl(var(--ojas-700))]">
+              <div className="w-9 h-9 rounded-full bg-[hsl(var(--ojas-100))] flex items-center justify-center text-xs font-bold text-[hsl(var(--ojas-700))] dark:bg-[hsl(var(--ojas-800))] dark:text-[hsl(var(--ojas-200))]">
                 {user?.full_name?.charAt(0) || 'U'}
               </div>
               <div className="overflow-hidden">
                 <p className="text-sm font-medium truncate">{user?.full_name || 'User'}</p>
-                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
           </div>

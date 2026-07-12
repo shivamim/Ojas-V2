@@ -39,14 +39,19 @@
 
     --success-50: 142 76% 96%;
     --success-100: 142 71% 88%;
+    --success-200: 142 71% 78%;
     --success-500: 142 71% 45%;
     --success-700: 142 71% 30%;
 
     --error-50: 0 84% 96%;
+    --error-100: 0 84% 88%;
+    --error-200: 0 84% 78%;
     --error-500: 0 84% 60%;
     --error-700: 0 84% 45%;
 
     --warning-50: 38 92% 96%;
+    --warning-100: 38 92% 88%;
+    --warning-200: 38 92% 78%;
     --warning-500: 38 92% 50%;
     --warning-700: 38 92% 35%;
   }
@@ -130,8 +135,32 @@
 }
 
 @layer components {
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .alert-error {
+    @apply bg-[hsl(var(--error-50))] text-[hsl(var(--error-700))] border border-[hsl(var(--error-200))] rounded-xl p-4;
+  }
+
+  .badge-risk-critical {
+    @apply bg-[hsl(var(--error-50))] text-[hsl(var(--error-700))] border border-[hsl(var(--error-200))] inline-flex items-center gap-1 rounded-full font-medium;
+  }
+
+  .badge-risk-high {
+    @apply bg-[hsl(var(--warning-50))] text-[hsl(var(--warning-700))] border border-[hsl(var(--warning-200))] inline-flex items-center gap-1 rounded-full font-medium;
+  }
+
+  .badge-risk-medium {
+    @apply bg-[hsl(var(--ojas-50))] text-[hsl(var(--ojas-700))] border border-[hsl(var(--ojas-200))] inline-flex items-center gap-1 rounded-full font-medium;
+  }
+
+  .badge-risk-low {
+    @apply bg-[hsl(var(--success-50))] text-[hsl(var(--success-700))] border border-[hsl(var(--success-200))] inline-flex items-center gap-1 rounded-full font-medium;
+  }
+
   .card-default {
-    @apply bg-white rounded-2xl p-5 border border-slate-100 shadow-sm;
+    @apply bg-card rounded-2xl p-5 border border-border shadow-sm;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
@@ -140,12 +169,16 @@
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
   }
 
+  .dark .card-default:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  }
+
   .skeleton {
-    @apply bg-slate-200 rounded-lg animate-pulse;
+    @apply bg-muted rounded-lg animate-pulse;
   }
 
   .shimmer {
-    @apply relative overflow-hidden bg-slate-200 rounded-xl;
+    @apply relative overflow-hidden bg-muted rounded-xl;
   }
 
   .shimmer::after {
@@ -176,16 +209,16 @@
   }
 
   .form-input {
-    @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 transition-all duration-200 ease-out;
+    @apply w-full px-4 py-3 rounded-xl border border-input bg-muted text-foreground placeholder-muted-foreground transition-all duration-200 ease-out;
   }
 
   .form-input:focus {
-    @apply border-[hsl(var(--ojas-500))] bg-white;
+    @apply border-[hsl(var(--ojas-500))] bg-background;
     box-shadow: 0 0 0 3px hsl(var(--ojas-500) / 0.15);
   }
 
   .form-input.error {
-    @apply border-red-400 bg-red-50;
+    @apply border-destructive bg-red-50;
     animation: shake 0.4s ease-in-out;
   }
 
@@ -194,11 +227,24 @@
   }
 
   .form-label {
-    @apply block text-sm font-medium text-slate-700 mb-1.5;
+    @apply block text-sm font-medium text-foreground mb-1.5;
   }
 
   .form-error {
-    @apply text-xs text-red-500 mt-1 flex items-center gap-1;
+    @apply text-xs text-destructive mt-1 flex items-center gap-1;
+  }
+
+  /* Dark mode overrides for custom classes */
+  .dark .form-input {
+    @apply bg-muted border-border;
+  }
+
+  .dark .form-input:focus {
+    @apply bg-background;
+  }
+
+  .dark .btn-primary {
+    @apply bg-[hsl(var(--ojas-500))] hover:bg-[hsl(var(--ojas-400))];
   }
 }
 
